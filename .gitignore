@@ -1,0 +1,4 @@
+evals/*
+models/*
+logs/*
+*.log
