@@ -2,3 +2,4 @@ evals/*
 models/*
 logs/*
 *.log
+*.zip

@@ -1,0 +1,10 @@
+hilbert-dimension 31
+max-steps 50
+initial-sqz 1.15
+sqz-max 1.15
+disp-max 2.25
+pnr-disp-max 2.25
+inline-disp-max 2.25
+loss 0.0
+reward-exponent 50.0
+reward-func fidelity

@@ -1,0 +1,13 @@
+multi-proc t
+total-timesteps 15_000_000
+gamma 0.999
+n_epochs 15
+batch_size 5_000
+buffer_size 35_000
+clip_range 0.20
+learning_rate 0.001
+use_lstm f
+hidden_layer1 256
+hidden_layer2 128
+hidden_layer3 64
+activation_func tanh
