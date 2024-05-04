@@ -3,4 +3,5 @@ models/*
 logs/*
 *.log
 *.zip
+*/.ipynb_checkpoints/
 .ipynb_checkpoints/
