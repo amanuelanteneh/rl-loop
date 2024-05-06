@@ -8,3 +8,4 @@ inline-disp-max 2.25
 loss 0.0
 reward-exponent 50.0
 reward-func fidelity
+circuit-design bs_offlineSqz_pnr_disp
