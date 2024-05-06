@@ -32,7 +32,7 @@ if __name__ == '__main__': # needed for multi proc
                 +'_sqz0_'+parameters['initial-sqz']\
                 +'_exp_'+str(exp)\
                 +'_rew_'+reward+'_sqzmax_'+parameters['sqz-max']\
-                +'_dmax_'+parameters['disp-max']
+                +'_dmax_'+parameters['disp-max']\
                 +'_tar_'+str(target)+'_lstm_'+parameters['lstm']\
                 +'_pnr_'+parameters['pnr-disp-mag']\
                 +'_loss_'+parameters['loss']\
