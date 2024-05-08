@@ -93,7 +93,7 @@ if __name__ == '__main__': # needed for multi proc
     
     del plotEnv # no longer needed
 
-    multi_proc = os.cpu_count() > 2
+    multi_proc = os.cpu_count() >= cpus
     if multi_proc:
     
         n_steps = buffer_size // cpus
@@ -111,7 +111,7 @@ if __name__ == '__main__': # needed for multi proc
         eps_callback = EpisodeCallbackMulti()
     
     else:
-        print("\nNot enough cores to run efficient training. Please upgrade machine.")
+        print("\nNumber of requested environments does not match or exceed the number of cores on machine.")
         exit()
 
     # create RL model
