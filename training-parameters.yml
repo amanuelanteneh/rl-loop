@@ -8,7 +8,6 @@ circuit:
   penalty_exponent: 50.0
   reward_func: "fidelity"
   circuit_type: "s|d|bs|d"
-  num_actions: 4
 model:
   total_timesteps: 15_000_000
   gamma: 0.999

@@ -10,6 +10,7 @@ from utils import  EpisodeCallbackMulti,\
                    TimestepCallbackMulti, CheckpointCallback, get_states
 import os
 import yaml
+import shutil
 from typing import Callable, Dict, List, Any
 
 
@@ -67,12 +68,14 @@ if __name__ == '__main__': # needed for multi proc
                 +'_rew_'+circuit_parameters["reward_func"]\
                 +'_maxsqz_'+str(circuit_parameters["max_sqz"])\
                 +'_dmax_'+str(circuit_parameters["max_disp"])\
-                +'_tar_'+target\
+                +'_tar_'+target+'_type_'+circuit_parameters["circuit_type"]\
                 +'_loss_'+str(circuit_parameters["loss"])
 
     os.makedirs('models/', exist_ok=True) # create folder for models if not already there
 
     os.makedirs('models/' + model_name, exist_ok=True) # create folder for agent with these parameters
+    
+    shutil.copyfile('training-parameters.yml', 'models/' + model_name + '/training-parameters.yml')
 
     log_dir = "logs/"
 
