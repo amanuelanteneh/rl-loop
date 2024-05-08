@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import pi, sqrt, diagonal, triu_indices, arccos, concatenate, arange, real, imag
+from numpy import pi, sqrt, diagonal, triu_indices, arccos, concatenate, arange, real, imag, dot
 
 from qutip import Qobj, fidelity, destroy, momentum, position, displace
 
@@ -14,37 +14,49 @@ from typing import Tuple, List, Dict, Union, Any
 from utils import plot_state, squeezed_vacuum
 
 
+circuit_types = { "s_bs": 2, # squeezed state input with no angle control and beamsplitter with only \tau tunable 
+                  "s_d_bs": 3, # same as above except with in-loop/in-line displacement with fixed angle of pi/2
+                  "s_bs_d": 3, # same as first but with displacement prior to PNR detector 
+                  "s_bs_d-angle": 4, # same as above but displacement angle is now tunable
+                  "s_d_bs_d": 4 # same as first but with fixed angle (pi/2) angle inline AND PNR displacement
+                }
+
+
 class Circuit(Env): # the time-multiplexed optical circuit (the environment)
     
-        def __init__(self, env_params: Dict[str, str],  targets: List[np.ndarray],  
+        def __init__(self, env_params: Dict[str, Union[int,float,str, bool]],  targets: List[np.ndarray],  
                      seed: int = None, evaluate: bool = False) -> None:
         
             if seed != None:
                np.random.seed(seed) # set random seed for env instance
             
-            self.dim: int = env_params["hilbert_dimension"] # dimension of hilbert space 
-            self.reward_method: str = env_params["reward_func"]
-            self.evaluate: bool = evaluate
-            self.max_quad: float = 7.5 # maximum quadrature value for Winger plot
+            self.dim = env_params["hilbert_dimension"] # dimension of hilbert space 
+            self.reward_method = env_params["reward_func"]
+            self.evaluate  = evaluate
+            self.max_quad = 7.5 # maximum quadrature value for Winger plot
             self.quad_range: np.ndarray = arange(-self.max_quad, self.max_quad, 0.1)
-            self.exp: float = env_params["penalty_exponent"] # penalty exponent
-            self.sqz_mag: float = np.abs(env_params["initial_sqz"])
-            self.sqz_angle: float = np.angle(env_params["initial_sqz"])
-            self.max_sqz: float = env_params["max_sqz"]
-            self.max_disp: float = env_params["max_disp"]
-            self.success_prob: float = 1
-            self.loss: float = env_params["loss"]
-            self.is_lossy: bool = self.loss > 0.0
-            self.t: int = 0 # the current time step
-            self.T: int = env_params["max_steps"] # max number of iterations/time steps
-            self.num_actions: int = env_params["num_actions"]
+            self.exp = env_params["penalty_exponent"] # penalty exponent
+            self.sqz_mag = np.abs(env_params["initial_sqz"])
+            self.sqz_angle = np.angle(env_params["initial_sqz"])
+            self.max_sqz  = env_params["max_sqz"]
+            self.max_disp = env_params["max_disp"]
+            self.success_prob = 1.0
+            self.loss = env_params["loss"]
+            self.is_lossy = self.loss > 0.0
+            self.t = 0 # the current time step
+            self.T = env_params["max_steps"] # max number of iterations/time steps
+            self.circuit_type = env_params["circuit_type"]
+            self.num_actions = circuit_types[self.circuit_type]
             self.steps: List[Dict[str, Union[float, int]]] = []
-            self.target_states: List[np.ndarray] = targets
+            self.target_states = targets
             self.num_target_states = len(self.target_states)
+            self.trace = 1.0
+            self.prog = None
+            self.eng = sf.Engine("fock", backend_options={"cutoff_dim": self.dim})
 
             # get initial state
-            self.initial: np.ndarray = squeezed_vacuum(self.sqz_mag, self.sqz_angle, self.dim)
-            self.dm: np.ndarray = self.initial
+            self.initial = squeezed_vacuum(self.sqz_mag, self.sqz_angle, self.dim)
+            self.dm = self.initial
             
             # state space
             self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=( self.dim**2, ), dtype=np.float32) 
@@ -56,9 +68,156 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.action_space = spaces.Box(low=np.array(minAction).astype(np.float32),\
                                            high=np.array(maxAction).astype(np.float32), dtype=np.float32)
         
-        def step(action: List, postselect: int=None) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Union[float, int]]]:
+        def step(self, action: List[float], 
+                 postselect: int = None) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Union[float, int]]]:
 
-            return
+            # perform unitary evolution
+            transmittivity, r, d_pnr, d_pnr_phi, d_inline, d_inline_phi = self.apply_unitary(action)
+
+            result = self.eng.run(self.prog) 
+            
+            if self.evaluate:
+                dm1 = result.state.reduced_dm([0]) # density matrix of mode 1 before pnr projection
+            self.trace = result.state.trace() # get trace of simulation step *before* PNR
+            
+            # measurement (non-unitary)
+            if postselect == None:
+                measureProg = sf.Program(self.prog) 
+                with measureProg.context as q:
+                    if self.lossy:
+                        LossChannel(1 - self.loss) | q[0]
+                    MeasureFock() | q[0] # random PNR measurement on mode 1
+            else: 
+                measureProg = sf.Program(self.prog) 
+                with measureProg.context as q:
+                    if self.lossy:
+                        LossChannel(1 - self.loss) | q[0]
+                    MeasureFock(select=postselect) | q[0] # postselected PNR measurement on mode 1
+
+            result = self.eng.run(measureProg)
+            n = result.samples[0][0] # the number of detected photons
+
+            if self.eval: # if in evaluation mode
+                Pn = real(dm1[n][n])
+                if round(transmittivity, 2) == 1.0: # if agent resets loop
+                    self.success_prob = 1
+                    Pn = 1
+                elif round(transmittivity, 2) == 0.0: # if agent turns off BS
+                    Pn = 1
+                self.successProb *= Pn
+            
+            self.t += 1 # increment time step 
+            self.dm = result.state.reduced_dm([1]) # partial trace over mode 1   
+            reward, F = self.get_reward()
+            done = self.t == self.T 
+
+            info = {"Timestep": self.t,
+                    "Tr": self.trace,
+                    "P": self.success_prob,
+                    "F": F,
+                    "n": int(n),
+                    "t": transmittivity,
+                    "r": r,
+                    "d-pnr": d_pnr,
+                    "d-pnr-phi": d_pnr_phi,
+                    "d-inline": d_inline,
+                    "d-inline-phi": d_inline_phi,
+                     }
+
+            self.steps.append(info)
+            state = self.dm[triu_indices(self.dim, k=1)] # get values above diagonal since dm is hermitian
+            diag = diagonal(self.dm) # also get diagonal
+            state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
+            state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
+            
+            return(state, reward, done, False, info)
+
+        def apply_unitary(self, action: List[float]) -> Tuple[float, float, float, float, float, float]:
+            transmittivity = r = 0.0
+            d_inline = d_inline_phi = d_pnr = d_pnr_phi = 0.0
+            
+            self.prog = sf.Program(2) # create 2 mode circuit
+            
+            if self.circuit_type == "s_bs":
+                transmittivity = (action[0] + 1.0)/2.0 # rescale range from [-1,1] -> [0, 1] 
+                theta = arccos(transmittivity)
+                r = self.max_sqz * action[1]
+
+                with self.prog.context as q:
+                    Squeezed(r, 0) | q[1] 
+                    DensityMatrix(self.dm) | q[0] # set mode 1 to be output state from prev. step
+                    BSgate(theta, 0) | (q[0], q[1])
+            
+            elif self.circuit_type == "s_d_bs":
+                transmittivity = (action[0] + 1.0)/2.0 
+                theta = arccos(transmittivity)
+                r = self.max_sqz * action[1]
+                d_inline = self.max_disp * action[2]
+                d_inline_phi = pi/2
+
+                with self.prog.context as q:
+                    Squeezed(r, 0) | q[1] 
+                    DensityMatrix(self.dm) | q[0]
+                    Dgate(d_inline, d_inline_phi) | q[0]
+                    BSgate(theta, 0) | (q[0], q[1])
+            
+            elif self.circuit_type == "s_bs_d":
+                transmittivity = (action[0] + 1.0)/2.0 
+                theta = arccos(transmittivity)
+                r = self.max_sqz * action[1]
+                d_pnr = self.max_disp * action[2]
+                d_pnr_phi = pi/2
+
+                with self.prog.context as q:
+                    Squeezed(r, 0) | q[1] 
+                    DensityMatrix(self.dm) | q[0]
+                    BSgate(theta, 0) | (q[0], q[1])
+                    Dgate(d_pnr, d_pnr_phi) | q[0]
+            
+            elif self.circuit_type == "s_bs_d-angle":
+                transmittivity = (action[0] + 1.0)/2.0 
+                theta = arccos(transmittivity)
+                r = self.max_sqz * action[1]
+                d_pnr = self.max_disp * action[2]
+                d_pnr_phi = pi*(action[3] + 1) # [-1,1] -> [0, 2*pi]
+
+                with self.prog.context as q:
+                    Squeezed(r, 0) | q[1] 
+                    DensityMatrix(self.dm) | q[0]
+                    BSgate(theta, 0) | (q[0], q[1])
+                    Dgate(d_pnr, d_pnr_phi) | q[0]
+
+            elif self.circuit_type == "s_d_bs_d":
+                transmittivity = (action[0] + 1.0)/2.0 
+                theta = arccos(transmittivity)
+                r = self.max_sqz * action[1]
+                d_pnr = self.max_disp * action[2]
+                d_inline = self.max_disp * action[3]
+                d_pnr_phi = d_inline_phi = pi/2
+
+                with self.prog.context as q:
+                    Squeezed(r, 0) | q[1] 
+                    DensityMatrix(self.dm) | q[0]
+                    Dgate(d_inline, d_inline_phi) | q[0]
+                    BSgate(theta, 0) | (q[0], q[1])
+                    Dgate(d_pnr, d_pnr_phi) | q[0]
+            
+            else:
+                raise NotImplementedError("Circuit type not implemented!")
+            
+            return transmittivity, r, d_pnr, d_pnr_phi, d_inline, d_inline_phi
+
+        def get_reward(self) -> Tuple[float, float]:
+            if self.reward_method == "fidelity":
+                # since we know at least one of the states will be pure (the target state) 
+                # we can use this much simpler formula for density matrix fidelity
+                F = max( [real(dot(np.array(target), self.dm).trace()) for target in self.target_states] )
+                reward = (self.trace**(self.exp/10.0)) * (F**self.exp)       
+            
+            else:
+                raise NotImplementedError("Reward method not implemented!")
+
+            return reward, F
 
         def render(self, name: str, filename: str, is_target: bool=True) -> None:
             # plots the Wigner function and photon number distribution
@@ -75,7 +234,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
         
         
         def reset(self, seed=1) -> Tuple[np.ndarray, Dict[Any, Any]]:
-            # reset the environment
+            # resets the environment
             self.t = 0
             self.steps = []
             self.dm = self.initial

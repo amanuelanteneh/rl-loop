@@ -7,7 +7,7 @@ circuit:
   loss: 0.0
   penalty_exponent: 50.0
   reward_func: "fidelity"
-  circuit_design: "bs_offlineSqz_pnr_disp"
+  circuit_type: "s_d_bs_d"
   num_actions: 4
 model:
   total_timesteps: 15_000_000
