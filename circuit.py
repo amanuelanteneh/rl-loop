@@ -1,10 +1,8 @@
 import numpy as np
-from numpy import pi, sqrt, diagonal, triu_indices, arccos, concatenate, arange, real, imag, dot
-
-from qutip import Qobj, fidelity, destroy, momentum, position, displace
+from numpy import pi, diagonal, triu_indices, arccos, concatenate, arange, real, imag, dot
 
 import strawberryfields as sf
-from strawberryfields.ops import Sgate, Squeezed, Dgate, BSgate, MeasureFock, DensityMatrix, LossChannel
+from strawberryfields.ops import Squeezed, Dgate, BSgate, MeasureFock, DensityMatrix, LossChannel
 
 from gym import Env
 from gym import spaces
@@ -239,9 +237,9 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.t = 0
             self.steps = []
             self.dm = self.initial
-            state: np.ndarray = self.dm[triu_indices(self.dim, k=1)]
-            diag: np.ndarray = diagonal(self.dm)
-            state: np.ndarray = np.concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
-            state: np.ndarray = np.concatenate((state, real(diag)), dtype=np.float32, axis=None)
+            state = self.dm[triu_indices(self.dim, k=1)]
+            diag = diagonal(self.dm)
+            state = np.concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
+            state = np.concatenate((state, real(diag)), dtype=np.float32, axis=None)
 
             return(state)
