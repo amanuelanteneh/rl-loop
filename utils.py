@@ -130,6 +130,56 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
 
     return states
 
+def episode_stats(ep):
+    pnrs = 0
+    steps_without_resets = 0
+    steps_with_resets = 0
+    for i in range(len(ep)):
+        pnrs += ep[i]['n']
+        steps_with_resets += 1
+        steps_without_resets += 1
+        if round(ep[i]['t'], 2) == 1.0:
+           steps_without_resets = 0
+        if round(ep[i]['t'], 2) == 0.0 and round(ep[i]['d-inline'], 2) == 0.0:
+           break
+
+    return steps_with_resets, steps_without_resets, pnrs
+
+
+def histogram(num_bins, final_fidelities, steps_resets, steps_no_resets, photon_counts, 
+              num_eval_episodes, model_name, max_steps, filename="stats-histogram") -> None:
+    plt.rcParams.update({'font.size': 24})
+    fig = plt.figure(figsize=(16, 8), dpi=180)
+    
+    ax = fig.add_subplot(2, 2, 1)
+    bins = np.linspace(0, 1, num_bins)
+    ax.axis(xmin=-0.1, xmax=1.1)
+    ax.hist(final_fidelities, bins=bins, alpha=0.8)
+    ax.set_xlabel(f'Output state fidelity')
+    
+    ax = fig.add_subplot(2, 2, 2)
+    bins = np.linspace(0, 350, 350+1, dtype=int)
+    ax.axis(xmin=-2, xmax=350)
+    ax.hist(photon_counts, bins=bins, alpha=0.8)
+    ax.set_xlabel('Total photons detected per episode \n (50 detections per episode)')
+    
+    ax = fig.add_subplot(2, 2, 3)
+    bins = np.linspace(0, max_steps, max_steps+1, dtype=int)
+    ax.axis(xmin=-2, xmax=max_steps+1)
+    ax.hist(steps_resets, bins=bins, alpha=0.8)
+    ax.set_xlabel(f'Total steps per episode with resets')
+    
+    ax = fig.add_subplot(2, 2, 4)
+    bins = np.linspace(0, max_steps, max_steps+1, dtype=int)
+    ax.axis(xmin=-2, xmax=max_steps+1)
+    ax.hist(steps_no_resets, bins=bins, alpha=0.8)
+    ax.set_xlabel(f'Total steps per episode without resets')
+    
+    fig.tight_layout()
+    plt.savefig('evals/'+model_name+"/eval-"+filename+".png", dpi=180)
+
+    return
+
 class EpisodeCallbackMulti(BaseCallback):
     """
     Callback used for logging episode data.

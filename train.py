@@ -87,14 +87,14 @@ if __name__ == '__main__': # needed for multi proc
     target_states: List[np.ndarray] = get_states(state, circuit_parameters["hilbert_dimension"], state_params)
 
     # create env to plot initial state 
-    plotEnv = Circuit(circuit_parameters, targets=target_states, seed=42, evaluate=False)
+    plov_env = Circuit(circuit_parameters, targets=target_states, seed=42, evaluate=False)
 
     # plot the initial state
-    plotEnv.render(name='initial', filename='models/'+model_name+"/start", is_target=False)
+    plov_env.render(name='initial', filename='models/'+model_name+"/start", is_target=False)
     # plot the target state
-    plotEnv.render(name=None, filename='models/'+model_name+"/target", is_target=True)
+    plov_env.render(name=None, filename='models/'+model_name+"/target", is_target=True)
     
-    del plotEnv # no longer needed
+    del plov_env # no longer needed
 
     multi_proc = os.cpu_count() >= cpus
     if multi_proc:
@@ -106,7 +106,7 @@ if __name__ == '__main__': # needed for multi proc
         # create env vector for parallel training
         env = SubprocVecEnv([make_env(circuit_parameters, targets=target_states, rank=i, seed=42+i) for i in range(cpus)])
         
-        checkpoint_callback = CheckpointCallback(save_freq=max(50_000 // cpus, 1), 
+        checkpoint_callback = CheckpointCallback(save_freq=max(5 // cpus, 1), 
                                                             save_path="models/"+model_name, 
                                                             name_prefix="rl_model")
         
