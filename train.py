@@ -6,8 +6,8 @@ import torch
 import torch.optim as optim
 import sys
 from circuit import Circuit
-from utils import  episode_callback_single, timestep_callback_single, episode_callback_multi,\
-                   timestep_callback_multi, checkpoint_callback, get_states
+from utils import  EpisodeCallbackMulti,\
+                   TimestepCallbackMulti, CheckpointCallback, get_states
 import os
 import yaml
 from typing import Callable, Dict, List, Any
@@ -45,9 +45,8 @@ if __name__ == '__main__': # needed for multi proc
     for key in circuit_parameters:
         print(key, ":", circuit_parameters[key], flush=True)
 
-
     
-    cpus = int(sys.argv[1])
+    cpus = int(sys.argv[1]) # number of environments to run in parallel
     target = sys.argv[2]
 
     # model parameters
@@ -94,7 +93,7 @@ if __name__ == '__main__': # needed for multi proc
     
     del plotEnv # no longer needed
 
-    multi_proc: bool = os.cpu_count() > 2
+    multi_proc = os.cpu_count() > 2
     if multi_proc:
     
         n_steps = buffer_size // cpus
@@ -104,23 +103,16 @@ if __name__ == '__main__': # needed for multi proc
         # create env vector for parallel training
         env = SubprocVecEnv([make_env(circuit_parameters, targets=target_states, rank=i, seed=42+i) for i in range(cpus)])
         
-        checkpoint_callback: Callable = checkpoint_callback(save_freq=max(50_000 // cpus, 1), 
+        checkpoint_callback = CheckpointCallback(save_freq=max(50_000 // cpus, 1), 
                                                             save_path="models/"+model_name, 
                                                             name_prefix="rl_model")
         
-        timestep_callback: Callable = timestep_callback_multi()
-        eps_callback: Callable = episode_callback_multi()
-        
+        timestep_callback = TimestepCallbackMulti()
+        eps_callback = EpisodeCallbackMulti()
+    
     else:
-        print("\nNot using multi-processing")
-        timestep_callback: Callable = timestep_callback_single()
-        eps_callback: Callable = episode_callback_single()
-        
-        checkpoint_callback: Callable = checkpoint_callback(save_freq=2000, 
-                                                 save_path="models/"+model_name, name_prefix="rl_model")
-        
-        env = Circuit(circuit_parameters, targets=target_states, seed=42, evaluate=False)
-
+        print("\nNot enough cores to run efficient training. Please upgrade machine.")
+        exit()
 
     # create RL model
     if activation == 'relu':
@@ -169,9 +161,6 @@ if __name__ == '__main__': # needed for multi proc
 
     print("\nStarting training.", flush=True)
 
-    if not multi_proc:
-        model.learn(total_timesteps=total_timesteps, tb_log_name=model_name, callback=[timestep_callback, eps_callback, checkpoint_callback])
-    else:
-        model.learn(total_timesteps=total_timesteps, tb_log_name=model_name, callback=[timestep_callback, eps_callback, checkpoint_callback])
+    model.learn(total_timesteps=total_timesteps, tb_log_name=model_name, callback=[timestep_callback, eps_callback, checkpoint_callback])
 
     print("\nTraining complete.")

@@ -14,11 +14,11 @@ from typing import Tuple, List, Dict, Union, Any
 from utils import plot_state, squeezed_vacuum
 
 
-circuit_types = { "s_bs": 2, # squeezed state input with no angle control and beamsplitter with only \tau tunable 
-                  "s_d_bs": 3, # same as above except with in-loop/in-line displacement with fixed angle of pi/2
-                  "s_bs_d": 3, # same as first but with displacement prior to PNR detector 
-                  "s_bs_d-angle": 4, # same as above but displacement angle is now tunable
-                  "s_d_bs_d": 4 # same as first but with fixed angle (pi/2) angle inline AND PNR displacement
+circuit_types = { "s|bs": 2, # squeezed state input with no angle control and beamsplitter with only \tau tunable 
+                  "s|d|bs": 3, # same as above except with in-loop/in-line displacement with fixed angle of pi/2
+                  "s|bs|d": 3, # same as first but with displacement prior to PNR detector 
+                  "s|bs|d-angle": 4, # same as above but displacement angle is now tunable
+                  "s|d|bs|d": 4 # same as first but with fixed angle (pi/2) angle inline AND PNR displacement
                 }
 
 
@@ -56,20 +56,21 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
 
             # get initial state
             self.initial = squeezed_vacuum(self.sqz_mag, self.sqz_angle, self.dim)
-            self.dm = self.initial
+            self.dm: np.ndarray = self.initial
             
             # state space
             self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=( self.dim**2, ), dtype=np.float32) 
             
-            # action space
+            
             minAction = [-1.0] * self.num_actions
             maxAction = [1.0] * self.num_actions
-                
+            
+            # action space
             self.action_space = spaces.Box(low=np.array(minAction).astype(np.float32),\
                                            high=np.array(maxAction).astype(np.float32), dtype=np.float32)
         
         def step(self, action: List[float], 
-                 postselect: int = None) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Union[float, int]]]:
+                 postselect: int = None) -> Tuple[np.ndarray, float, bool, Dict[str, Union[float, int]]]:
 
             # perform unitary evolution
             transmittivity, r, d_pnr, d_pnr_phi, d_inline, d_inline_phi = self.apply_unitary(action)
@@ -84,27 +85,27 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             if postselect == None:
                 measureProg = sf.Program(self.prog) 
                 with measureProg.context as q:
-                    if self.lossy:
+                    if self.is_lossy:
                         LossChannel(1 - self.loss) | q[0]
                     MeasureFock() | q[0] # random PNR measurement on mode 1
             else: 
                 measureProg = sf.Program(self.prog) 
                 with measureProg.context as q:
-                    if self.lossy:
+                    if self.is_lossy:
                         LossChannel(1 - self.loss) | q[0]
                     MeasureFock(select=postselect) | q[0] # postselected PNR measurement on mode 1
 
             result = self.eng.run(measureProg)
             n = result.samples[0][0] # the number of detected photons
 
-            if self.eval: # if in evaluation mode
+            if self.evaluate: # if in evaluation mode
                 Pn = real(dm1[n][n])
                 if round(transmittivity, 2) == 1.0: # if agent resets loop
                     self.success_prob = 1
                     Pn = 1
                 elif round(transmittivity, 2) == 0.0: # if agent turns off BS
                     Pn = 1
-                self.successProb *= Pn
+                self.success_prob *= Pn
             
             self.t += 1 # increment time step 
             self.dm = result.state.reduced_dm([1]) # partial trace over mode 1   
@@ -130,7 +131,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
             state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
             
-            return(state, reward, done, False, info)
+            return(state, reward, done, info)
 
         def apply_unitary(self, action: List[float]) -> Tuple[float, float, float, float, float, float]:
             transmittivity = r = 0.0
@@ -138,7 +139,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             
             self.prog = sf.Program(2) # create 2 mode circuit
             
-            if self.circuit_type == "s_bs":
+            if self.circuit_type == "s|bs":
                 transmittivity = (action[0] + 1.0)/2.0 # rescale range from [-1,1] -> [0, 1] 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -148,7 +149,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     DensityMatrix(self.dm) | q[0] # set mode 1 to be output state from prev. step
                     BSgate(theta, 0) | (q[0], q[1])
             
-            elif self.circuit_type == "s_d_bs":
+            elif self.circuit_type == "s|d|bs":
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -161,7 +162,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     Dgate(d_inline, d_inline_phi) | q[0]
                     BSgate(theta, 0) | (q[0], q[1])
             
-            elif self.circuit_type == "s_bs_d":
+            elif self.circuit_type == "s|bs|d":
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -174,7 +175,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     BSgate(theta, 0) | (q[0], q[1])
                     Dgate(d_pnr, d_pnr_phi) | q[0]
             
-            elif self.circuit_type == "s_bs_d-angle":
+            elif self.circuit_type == "s|bs|d-angle":
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -187,7 +188,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     BSgate(theta, 0) | (q[0], q[1])
                     Dgate(d_pnr, d_pnr_phi) | q[0]
 
-            elif self.circuit_type == "s_d_bs_d":
+            elif self.circuit_type == "s|d|bs|d":
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -233,7 +234,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             return
         
         
-        def reset(self, seed=1) -> Tuple[np.ndarray, Dict[Any, Any]]:
+        def reset(self) -> np.ndarray:
             # resets the environment
             self.t = 0
             self.steps = []
@@ -243,4 +244,4 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             state: np.ndarray = np.concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
             state: np.ndarray = np.concatenate((state, real(diag)), dtype=np.float32, axis=None)
 
-            return(state, {})
+            return(state)

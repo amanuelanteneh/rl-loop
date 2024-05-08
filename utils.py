@@ -3,12 +3,16 @@ from numpy import pi, sqrt, cosh, exp, tanh, outer, arange, meshgrid, real, diag
 
 from qutip import wigner, squeeze, displace, momentum, position, fock, Qobj, coherent
 
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.logger import TensorBoardOutputFormat
+
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
 import math
 
 from typing import List, Union
+import os
 
 
 def squeezed_vacuum(r, theta, dim, dtype=np.complex128) -> np.ndarray:
@@ -126,18 +130,163 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
 
     return states
 
+class EpisodeCallbackMulti(BaseCallback):
+    """
+    Callback used for logging episode data.
+    """
+    def __init__(self, verbose=0):
+        super().__init__(verbose)
+        # Custom counter to reports stats
+        # (and avoid reporting multiple values for the same step)
+        self._episode_counter = 0
+        self._tensorboard_writer = None
 
-def episode_callback_single() -> None:
-    return
+    def _init_callback(self) -> None:
+        assert self.logger is not None
+        # Retrieve tensorboard writer to not flood the logger output
+        for out_format in self.logger.output_formats:
+            if isinstance(out_format, TensorBoardOutputFormat):
+                self._tensorboard_writer = out_format
+        assert self._tensorboard_writer is not None, "You must activate tensorboard logging when using RawStatisticsCallback"
 
-def timestep_callback_single() -> None:
-    return
+    def _on_step(self) -> bool:
+        infos = self.locals["infos"]
+        for i in range(len(infos)):
+            if self.locals['dones'][i]:
+                self.logger.record(f"episode/final_fidelity", infos[i]["F"])
+                self._episode_counter += 1
 
-def episode_callback_multi() -> None:
-    return
+        self.logger.dump(self._episode_counter)                
 
-def timestep_callback_multi() -> None:
-    return
+        return True
 
-def checkpoint_callback() -> None:
-    return
+class TimestepCallbackMulti(BaseCallback):
+    """
+    Callback used for logging timestep data.
+    """
+    def __init__(self, verbose=0):
+        super().__init__(verbose)
+
+    def _on_step(self) -> bool:
+        # Log scalar values 
+        infos = self.locals["infos"]
+        F = []
+        n = []
+        Tr = []
+        t = []
+        r = []
+        d_inline = []
+        d_inline_phi = []
+        d_pnr = []
+        d_pnr_phi = []
+
+        for i in range(len(infos)):
+
+            F.append(infos[i]['F'])
+            Tr.append(infos[i]['Tr'])
+            n.append(infos[i]['n'])
+
+            t.append(infos[i]['t'])
+            r.append(infos[i]['r'])
+
+            d_inline.append(infos[i]['d-inline'])
+            d_inline_phi.append(infos[i]['d-inline-phi'])
+            d_pnr.append(infos[i]['d-pnr'])
+            d_pnr_phi.append(infos[i]['d-pnr-phi'])
+
+        self.logger.record(f"timestep/avg_transmitivity", np.mean(t))
+        self.logger.record(f"timestep/avg_squeezing", np.mean(r))
+        self.logger.record(f"timestep/avg_inline_displacement", np.mean(d_inline))
+        self.logger.record(f"timestep/avg_inline_displacement_phase", np.mean(d_inline_phi))
+        
+        self.logger.record(f"timestep/avg_trace", np.mean(Tr))
+
+        self.logger.record(f"timestep/avg_pnr_displacement", np.mean(d_pnr))
+        self.logger.record(f"timestep/avg_pnr_displacement_phase", np.mean(d_pnr_phi))
+
+        self.logger.record(f"timestep/avg_fidelity", np.mean(F))
+        self.logger.record(f"timestep/avg_PNR", np.mean(n))
+        self.logger.record(f"timestep/trace_env0", infos[0]['Tr'])
+        self.logger.record(f"timestep/trace_env1", infos[1]['Tr'])
+       
+        self.logger.dump(self.num_timesteps)
+
+        return(True)
+
+class CheckpointCallback(BaseCallback):
+    """
+    Callback for saving a model every ``save_freq`` calls
+    to ``env.step()``.
+    By default, it only saves model checkpoints,
+    you need to pass ``save_replay_buffer=True``,
+    and ``save_vecnormalize=True`` to also save replay buffer checkpoints
+    and normalization statistics checkpoints.
+
+    .. warning::
+
+      When using multiple environments, each call to  ``env.step()``
+      will effectively correspond to ``n_envs`` steps.
+      To account for that, you can use ``save_freq = max(save_freq // n_envs, 1)``
+
+    :param save_freq: Save checkpoints every ``save_freq`` call of the callback.
+    :param save_path: Path to the folder where the model will be saved.
+    :param name_prefix: Common prefix to the saved models
+    :param save_replay_buffer: Save the model replay buffer
+    :param save_vecnormalize: Save the ``VecNormalize`` statistics
+    :param verbose: Verbosity level: 0 for no output, 2 for indicating when saving model checkpoint
+    """
+
+    def __init__(
+        self,
+        save_freq: int,
+        save_path: str,
+        name_prefix: str = "rl_model",
+        save_replay_buffer: bool = False,
+        save_vecnormalize: bool = False,
+        verbose: int = 0,
+    ):
+        super().__init__(verbose)
+        self.save_freq = save_freq
+        self.save_path = save_path
+        self.name_prefix = name_prefix
+        self.save_replay_buffer = save_replay_buffer
+        self.save_vecnormalize = save_vecnormalize
+
+    def _init_callback(self) -> None:
+        # Create folder if needed
+        if self.save_path is not None:
+            os.makedirs(self.save_path, exist_ok=True)
+
+    def _checkpoint_path(self, checkpoint_type: str = "", extension: str = "") -> str:
+        """
+        Helper to get checkpoint path for each type of checkpoint.
+
+        :param checkpoint_type: empty for the model, "replay_buffer_"
+            or "vecnormalize_" for the other checkpoints.
+        :param extension: Checkpoint file extension (zip for model, pkl for others)
+        :return: Path to the checkpoint
+        """
+        return os.path.join(self.save_path, f"{self.name_prefix}.{extension}")
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.save_freq == 0:
+            model_path = self._checkpoint_path(extension="zip")
+            self.model.save(model_path)
+            if self.verbose >= 2:
+                print(f"Saving model checkpoint to {model_path}")
+
+            if self.save_replay_buffer and hasattr(self.model, "replay_buffer") and self.model.replay_buffer is not None:
+                # If model has a replay buffer, save it too
+                replay_buffer_path = self._checkpoint_path("replay_buffer_", extension="pkl")
+                self.model.save_replay_buffer(replay_buffer_path)
+                if self.verbose > 1:
+                    print(f"Saving model replay buffer checkpoint to {replay_buffer_path}")
+
+            if self.save_vecnormalize and self.model.get_vec_normalize_env() is not None:
+                # Save the VecNormalize statistics
+                vec_normalize_path = self._checkpoint_path("vecnormalize_", extension="pkl")
+                self.model.get_vec_normalize_env().save(vec_normalize_path)
+                if self.verbose >= 2:
+                    print(f"Saving model VecNormalize to {vec_normalize_path}")
+
+        return True
