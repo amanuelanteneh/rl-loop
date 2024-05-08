@@ -14,7 +14,7 @@ from utils import plot_state, squeezed_vacuum
 
 circuit_types = { "s|bs": 2, # squeezed state input with no angle control and beamsplitter with only \tau tunable 
                   "s|d|bs": 3, # same as above except with in-loop/in-line displacement with fixed angle of pi/2
-                  "s|bs|d": 3, # same as first but with displacement prior to PNR detector 
+                  "s|bs|d": 3, # same as first but with displacement prior to PNR detector with fixed angle of pi/2
                   "s|bs|d-angle": 4, # same as above but displacement angle is now tunable
                   "s|d|bs|d": 4 # same as first but with fixed angle (pi/2) angle inline AND PNR displacement
                 }
