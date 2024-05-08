@@ -1,43 +1,75 @@
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from sb3_contrib import RecurrentPPO
+import numpy as np
 import torch
 import torch.optim as optim
 import sys
 from circuit import Circuit
-from utils import *
+from utils import  episode_callback_single, timestep_callback_single, episode_callback_multi,\
+                   timestep_callback_multi, checkpoint_callback, get_states
 import os
+import yaml
+from typing import Callable, Dict, List, Any
+
+
+def make_env(env_parameters: Dict[str, str], targets: np.ndarray ,rank: int, seed: int) -> Callable:
+    """
+    Utility function for multiprocessed env
+    
+    :param seed: (int) the inital seed for RNG
+    :param rank: (int) index of the subprocess
+    :return: (Callable)
+    """
+    def _init() -> Circuit:
+        env = Circuit(env_parameters, targets=targets, seed=seed+rank, evaluate=False)
+       
+        return env
+
+    return _init
 
 
 if __name__ == '__main__': # needed for multi proc
     
-    parameters = {}
-    with open("training-parameters.txt") as file: # read training file
-        for line in file:
-           (key, val) = line.split()
-           parameters[key] = val
- 
-    print("Parameters used for training:", flush=True)
-    for key in parameters:
-        print(key, ":", parameters[key], flush=True)
-        
+    with open('training-parameters.yml', 'r') as file:
+         training_parameters = yaml.safe_load(file)
+    
+    model_parameters: Dict[str, Any] = training_parameters['model']
+    circuit_parameters: Dict[str, Any] = training_parameters['circuit']
 
-    if activation == 'relu':
-       act = torch.nn.ReLU
-    else:
-       act = torch.nn.Tanh
+    print("\nModel parameters:\n", flush=True)
+    for key in model_parameters:
+        print(key, ":", model_parameters[key], flush=True)
+    
+    print("\nCircuit parameters:\n", flush=True)
+    for key in circuit_parameters:
+        print(key, ":", circuit_parameters[key], flush=True)
 
 
-    model_name = 'dim_'+str(dim) \
-                +'_sqz0_'+parameters['initial-sqz']\
-                +'_exp_'+str(exp)\
-                +'_rew_'+reward+'_sqzmax_'+parameters['sqz-max']\
-                +'_dmax_'+parameters['disp-max']\
-                +'_tar_'+str(target)+'_lstm_'+parameters['lstm']\
-                +'_pnr_'+parameters['pnr-disp-mag']\
-                +'_loss_'+parameters['loss']\
-                +'_buf_'+str(n_steps)+'_epoch_'+str(n_epochs)\
-                +'_batch_'+str(batchSize)+'_lr_'+str(lr)
+    
+    cpus = int(sys.argv[1])
+    target = sys.argv[2]
+
+    # model parameters
+    activation: str = model_parameters["activation_func"]
+    use_lstm: bool = model_parameters["use_lstm"]
+    gamma: float = model_parameters["gamma"]
+    clip_range: float = model_parameters["clip_range"]
+    learning_rate: float = model_parameters["learning_rate"]
+    num_epochs: int = model_parameters["num_epochs"]
+    batch_size: int = model_parameters["batch_size"]
+    buffer_size: int = model_parameters["buffer_size"]
+    total_timesteps: int = model_parameters["total_timesteps"]
+    hidden_layers: List[int] = model_parameters["hidden_layers"]
+    
+
+    model_name = 'dim_'+str(circuit_parameters["hilbert_dimension"]) \
+                +'_exp_'+str(circuit_parameters["penalty_exponent"])\
+                +'_rew_'+circuit_parameters["reward_func"]\
+                +'_maxsqz_'+str(circuit_parameters["max_sqz"])\
+                +'_dmax_'+str(circuit_parameters["max_disp"])\
+                +'_tar_'+target\
+                +'_loss_'+str(circuit_parameters["loss"])
 
     os.makedirs('models/', exist_ok=True) # create folder for models if not already there
 
@@ -47,94 +79,99 @@ if __name__ == '__main__': # needed for multi proc
 
     os.makedirs(log_dir, exist_ok=True)
     
-    if multiProc:
+    # get target states
+    state = target.split('~')[0]
+    state_params = target.split('~')[1:]
+    target_states: List[np.ndarray] = get_states(state, circuit_parameters["hilbert_dimension"], state_params)
+
+    # create env to plot initial state 
+    plotEnv = Circuit(circuit_parameters, targets=target_states, seed=42, evaluate=False)
+
+    # plot the initial state
+    plotEnv.render(name='initial', filename='models/'+model_name+"/start", is_target=False)
+    # plot the target state
+    plotEnv.render(name=None, filename='models/'+model_name+"/target", is_target=True)
     
-        cpus = int(sys.argv[1])
-        n_steps = n_steps // cpus
+    del plotEnv # no longer needed
+
+    multi_proc: bool = os.cpu_count() > 2
+    if multi_proc:
+    
+        n_steps = buffer_size // cpus
         print(f"\nUsing multi-proccessing with {cpus} cpu cores ({cpus} environments)\n")
-        print(f"n_steps passed to PPO object was changed to be different than that given in model-parameters file, now is: {n_steps}\n")
+        print(f"n_steps passed to PPO object was changed to be different than that given in training-parameters yaml file, now is: {n_steps}\n")
         
         # create env vector for parallel training
-        env = SubprocVecEnv([make_env(dim, intialSqz, maxSteps, exp, sqzMax, dispMax, pnr_disp, tune_pnr_phi, target,\
-                                  reward, i, 2023, loss) for i in range(cpus)])
-
-
-        # create env to plot inital state and evaluate agent
-        plotEnv = Circuit(dim, intialSqz, maxSteps, exp, sqzMax, dispMax, pnr_disp, tune_pnr_phi, target, \
-                                   reward, 1982, False, loss)
-
-        # plot the initial state
-        plotEnv.render(False, 'initial', 'models/'+modelName+"/start")
-        # plot the target state
-        plotEnv.render(True, 'target', 'models/'+modelName+"/target")
+        env = SubprocVecEnv([make_env(circuit_parameters, targets=target_states, rank=i, seed=42+i) for i in range(cpus)])
         
-        del plotEnv # no longer needed
+        checkpoint_callback: Callable = checkpoint_callback(save_freq=max(50_000 // cpus, 1), 
+                                                            save_path="models/"+model_name, 
+                                                            name_prefix="rl_model")
         
-        checkpoint_callback = CheckpointCallback(save_freq=max(50_000 // cpus, 1), save_path="models/"+modelName, name_prefix="rl_model")
-        
-        timestep_callback = TimestepCallbackMulti()
-        eps_callback = EpisodeCallbackMulti()
+        timestep_callback: Callable = timestep_callback_multi()
+        eps_callback: Callable = episode_callback_multi()
         
     else:
         print("\nNot using multi-processing")
-        timestep_callback = TimestepCallback()
-        eps_callback = EpisodeCallback()
+        timestep_callback: Callable = timestep_callback_single()
+        eps_callback: Callable = episode_callback_single()
         
-        checkpoint_callback = CheckpointCallback(save_freq=2000, 
-                                                 save_path="models/"+modelName, name_prefix="rl_model")
+        checkpoint_callback: Callable = checkpoint_callback(save_freq=2000, 
+                                                 save_path="models/"+model_name, name_prefix="rl_model")
         
-        env = Circuit(dim, intialSqz, maxSteps, exp, sqzMax, dispMax, pnr_disp, tune_pnr_phi, target,\
-                                   reward, 2023, False, loss)
-        
-         # plot the initial state
-        env.render(False, 'initial', 'models/'+modelName+"/start")
-        # plot the target state
-        env.render(True, 'target', 'models/'+modelName+"/target")
+        env = Circuit(circuit_parameters, targets=target_states, seed=42, evaluate=False)
 
 
-    if not useLSTM: # not using LSTM layer
+    # create RL model
+    if activation == 'relu':
+       act = torch.nn.ReLU
+    else:
+       act = torch.nn.Tanh
+
+    if not use_lstm: # not using LSTM layer
         # pi is neural network arch of the actor and vf is arch for the critic
         policy_kwargs = dict(activation_fn = act,
-                         net_arch=dict(pi=[hidden1, hidden2, hidden3], vf=[hidden1, hidden2, hidden3]), 
+                         net_arch=dict(pi=hidden_layers, 
+                                       vf=hidden_layers), 
                          optimizer_class = optim.Adam)
 
         model = PPO("MlpPolicy",
                     env,
                     gamma=gamma,
-                    n_epochs=n_epochs,
-                    batch_size=batchSize,
+                    n_epochs=num_epochs,
+                    batch_size=batch_size,
                     clip_range=clip_range,
                     n_steps=n_steps,
-                    learning_rate=lr,
+                    learning_rate=learning_rate,
                     policy_kwargs=policy_kwargs,
-                    tensorboard_log=logDir)
+                    tensorboard_log=log_dir)
 
     else: # if we want the first layer of the actor and critic networks to be LSTM layers
          policy_kwargs = dict(activation_fn = act,
-                         net_arch=dict(pi=[hidden1, hidden2, hidden3], vf=[hidden1, hidden2, hidden3]), 
-                         lstm_hidden_size = hidden1, 
+                         net_arch=dict(pi=hidden_layers, 
+                                       vf=hidden_layers), 
+                         lstm_hidden_size = hidden_layers[0], 
                          n_lstm_layers = 1,
                          optimizer_class = optim.Adam)
 
          model = RecurrentPPO("MlpLstmPolicy",
                     env,
                     gamma=gamma,
-                    n_epochs=n_epochs,
-                    batch_size=batchSize,
+                    n_epochs=num_epochs,
+                    batch_size=batch_size,
                     clip_range=clip_range,
                     n_steps=n_steps,
-                    learning_rate=lr,
+                    learning_rate=learning_rate,
                     policy_kwargs=policy_kwargs,
-                    tensorboard_log=logd_ir) 
+                    tensorboard_log=log_dir) 
 
     print("\nNeural network architecture: \n\n", model.policy, flush=True)
 
     print("\nStarting training.", flush=True)
 
-    if not multiProc:
-        model.learn(total_timesteps=totalTimesteps, tb_log_name=modelName, callback=[timestep_callback, eps_callback, checkpoint_callback])
+    if not multi_proc:
+        model.learn(total_timesteps=total_timesteps, tb_log_name=model_name, callback=[timestep_callback, eps_callback, checkpoint_callback])
     else:
-        # model.learn(total_timesteps=totalTimesteps, tb_log_name=modelName, callback=[timestep_callback, eps_callback, checkpoint_callback])
-        model.learn(total_timesteps=totalTimesteps, tb_log_name=modelName, callback=[timestep_callback, eps_callback, checkpoint_callback])
+        model.learn(total_timesteps=total_timesteps, tb_log_name=model_name, callback=[timestep_callback, eps_callback, checkpoint_callback])
 
     print("\nTraining complete.")

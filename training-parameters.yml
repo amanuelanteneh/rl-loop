@@ -1,0 +1,22 @@
+circuit:
+  hilbert_dimension: 40
+  max_steps: 50
+  initial_sqz: 0.0
+  max_sqz: 1.15
+  max_disp: 2.25
+  loss: 0.0
+  penalty_exponent: 50.0
+  reward_func: "fidelity"
+  circuit_design: "bs_offlineSqz_pnr_disp"
+  num_actions: 4
+model:
+  total_timesteps: 15_000_000
+  gamma: 0.999
+  num_epochs: 15
+  batch_size: 5_000
+  buffer_size: 35_000
+  clip_range: 0.20
+  learning_rate: 0.001
+  use_lstm: False
+  hidden_layers: [256, 128, 64]
+  activation_func: "relu"
