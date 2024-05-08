@@ -12,5 +12,5 @@
 #SBATCH --mail-type=ALL
 
 module load anaconda
-# num epsisodes, model name
+# num epsisodes, model name, verify
 time python evaluate.py $1 $2 $3

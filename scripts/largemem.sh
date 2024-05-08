@@ -12,5 +12,5 @@
 #SBATCH --mail-type=ALL
 
 module load anaconda
-# target, reward
-time python train.py 45 $1 $2
+# target
+time python train.py 45 $1 
