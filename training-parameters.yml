@@ -1,9 +1,9 @@
 circuit:
-  hilbert_dimension: 30
+  hilbert_dimension: 31
   max_steps: 50
-  initial_sqz: 0.0
+  initial_sqz: 1.15
   max_sqz: 1.15
-  max_disp: 1.25
+  max_disp: 2.25
   loss: 0.0
   penalty_exponent: 50.0
   reward_func: "fidelity"
