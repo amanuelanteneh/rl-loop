@@ -87,14 +87,14 @@ if __name__ == '__main__': # needed for multi proc
     target_states: List[np.ndarray] = get_states(state, circuit_parameters["hilbert_dimension"], state_params)
 
     # create env to plot initial state 
-    plov_env = Circuit(circuit_parameters, targets=target_states, seed=42, evaluate=False)
+    plot_env = Circuit(circuit_parameters, targets=target_states, seed=42, evaluate=False)
 
     # plot the initial state
-    plov_env.render(name='initial', filename='models/'+model_name+"/start", is_target=False)
+    plot_env.render(name='initial', filename='models/'+model_name+"/start", is_target=False)
     # plot the target state
-    plov_env.render(name=None, filename='models/'+model_name+"/target", is_target=True)
+    plot_env.render(name=None, filename='models/'+model_name+"/target", is_target=True)
     
-    del plov_env # no longer needed
+    del plot_env # no longer needed
 
     multi_proc = os.cpu_count() >= cpus
     if multi_proc:
