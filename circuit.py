@@ -80,21 +80,14 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             
             if self.evaluate:
                 dm1 = result.state.reduced_dm([0]) # density matrix of mode 1 before pnr projection
-            self.trace = result.state.trace() # get trace of simulation step *before* PNR
+            self.trace = result.state.trace() # get trace of simulation *before* PNR
             
             # measurement (non-unitary)
-            if postselect == None:
-                measure_prog = sf.Program(self.prog) 
-                with measure_prog.context as q:
-                    if self.is_lossy:
-                        LossChannel(1 - self.loss) | q[0]
-                    MeasureFock() | q[0] # random PNR measurement on mode 1
-            else: 
-                measure_prog = sf.Program(self.prog) 
-                with measure_prog.context as q:
-                    if self.is_lossy:
-                        LossChannel(1 - self.loss) | q[0]
-                    MeasureFock(select=postselect) | q[0] # postselected PNR measurement on mode 1
+            measure_prog = sf.Program(self.prog) 
+            with measure_prog.context as q:
+                if self.is_lossy:
+                    LossChannel(1 - self.loss) | q[0]
+                MeasureFock(select=postselect) | q[0] # postselected or random PNR measurement on mode 1
 
             result = self.eng.run(measure_prog)
             n = result.samples[0][0] # the number of detected photons
