@@ -84,19 +84,19 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             
             # measurement (non-unitary)
             if postselect == None:
-                measureProg = sf.Program(self.prog) 
-                with measureProg.context as q:
+                measure_prog = sf.Program(self.prog) 
+                with measure_prog.context as q:
                     if self.is_lossy:
                         LossChannel(1 - self.loss) | q[0]
                     MeasureFock() | q[0] # random PNR measurement on mode 1
             else: 
-                measureProg = sf.Program(self.prog) 
-                with measureProg.context as q:
+                measure_prog = sf.Program(self.prog) 
+                with measure_prog.context as q:
                     if self.is_lossy:
                         LossChannel(1 - self.loss) | q[0]
                     MeasureFock(select=postselect) | q[0] # postselected PNR measurement on mode 1
 
-            result = self.eng.run(measureProg)
+            result = self.eng.run(measure_prog)
             n = result.samples[0][0] # the number of detected photons
 
             if self.evaluate: # if in evaluation mode
