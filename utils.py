@@ -11,7 +11,7 @@ from matplotlib import cm
 
 import math
 
-from typing import List, Union
+from typing import List, Union, Tuple, Dict
 import os
 
 
@@ -145,6 +145,36 @@ def episode_stats(ep):
 
     return steps_with_resets, steps_without_resets, pnrs
 
+def steps_table(steps: List[ Dict[str, Union[float, int]] ], 
+              max_steps: int, model_name: str, filename: str) -> None:
+    
+    plt.rcParams.update({'font.size': 17})
+    fig = plt.figure(figsize=(15, 15), dpi=200)
+    plt.axis('off')
+
+    cell_data = []
+    columns = (r'$F$', r'$t$', r'$r$', r'$d_{inline}$', r'$\phi_{inline}$',
+               r'$d_{pnr}$', r'$\phi_{pnr}$',
+               r'Tr$[\rho]$', r'$n$', r'$P(\vec{n})$' )
+    rows = [ str(x) for x in range(1, max_steps+1) ]
+    
+    for i in range(len(steps)):
+        cell_data.append(  [ round(steps[i]['F'], 3), round(steps[i]['t'], 3), round(steps[i]['r'], 3), 
+                            round(steps[i]['d-inline'], 3), round(steps[i]['d-inline-phi'], 3),
+                            round(steps[i]['d-pnr'], 3), round(steps[i]['d-pnr-phi'], 3),  
+                            round(steps[i]['Tr'], 3), steps[i]['n'],  round(steps[i]['P'], 3)
+                            ]  )
+
+    table = plt.table(cellText=cell_data,
+                      rowLabels=rows,
+                      colLabels=columns,
+                      colWidths=[1.0/(4*len(columns))]*len(columns),
+                      loc='best')
+    table.scale(4.0, 1.5)
+    fig.tight_layout()
+    plt.savefig("evals/"+model_name+"/"+filename+".png", dpi=200)
+
+    return
 
 def histogram(num_bins, final_fidelities, steps_resets, steps_no_resets, photon_counts, 
               num_eval_episodes, model_name, max_steps, filename="stats-histogram") -> None:
@@ -155,7 +185,7 @@ def histogram(num_bins, final_fidelities, steps_resets, steps_no_resets, photon_
     bins = np.linspace(0, 1, num_bins)
     ax.axis(xmin=-0.1, xmax=1.1)
     ax.hist(final_fidelities, bins=bins, alpha=0.8)
-    ax.set_xlabel(f'Output state fidelity')
+    ax.set_xlabel(f'Output state fidelity' + '\n' + f"for {num_eval_episodes} episodes")
     
     ax = fig.add_subplot(2, 2, 2)
     bins = np.linspace(0, 350, 350+1, dtype=int)

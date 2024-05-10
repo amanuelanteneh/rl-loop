@@ -237,6 +237,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.t = 0
             self.steps = []
             self.dm = self.initial
+            self.success_prob = 1.0
             state = self.dm[triu_indices(self.dim, k=1)]
             diag = diagonal(self.dm)
             state = np.concatenate((real(state), imag(state)), dtype=np.float32, axis=None)

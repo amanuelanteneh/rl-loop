@@ -5,17 +5,22 @@ import yaml
 from circuit import Circuit
 from stable_baselines3 import PPO
 from typing import Dict, Any, List
-from utils import episode_stats, get_states, histogram
+from utils import episode_stats, get_states, histogram, steps_table
 
 num_eval_episodes = int(sys.argv[1])
 model_name = sys.argv[2]
-verify = sys.argv[2] == 't'
+verify = sys.argv[3] == 't'
 
-print("Model name: ", model_name, flush=True)
+print("Model name:", model_name, flush=True)
 
 with open("models/"+ model_name +"/training-parameters.yml", 'r') as file:
          training_parameters = yaml.safe_load(file)
-    
+
+if verify:
+    with open("models/"+ model_name +"/training-parameters.yml", 'r') as file:
+            verify_params = yaml.safe_load(file)
+            verify_params = verify_params['circuit']
+
 circuit_parameters: Dict[str, Any] = training_parameters['circuit']
 model_parameters: Dict[str, Any] = training_parameters['model']
 deterministic = True
@@ -27,7 +32,7 @@ photon_counts = []
 steps_no_resets = []
 steps_resets = []
 
-intervals = np.linspace(1, num_eval_episodes, 6, dtype=int) # to change random seed of env at 5 intervals of evalution
+intervals = np.linspace(1, num_eval_episodes, 6, dtype=int) # to change random seed of env at 5 intervals of evaluation
 lstm_states = None # used if agent has LSTM layer
 episode_starts = np.ones((1,), dtype=bool) # used if agent has LSTM layer
 seed = 0
@@ -36,6 +41,11 @@ target = model_name.split('_')[11]
 state = target.split('~')[0]
 state_params = target.split('~')[1:]
 target_states: List[np.ndarray] = get_states(state, circuit_parameters["hilbert_dimension"], state_params)
+
+if verify:
+    verify_params["hilbert_dimension"] = 40
+    target_states_verify: List[np.ndarray] = get_states(state, verify_params["hilbert_dimension"],
+                                                        state_params)
 
 plot_env = Circuit(circuit_parameters, targets=target_states, seed=42, evaluate=False)
 # plot the target state
@@ -49,9 +59,7 @@ for i in range(1, num_eval_episodes+1):
         env = Circuit(circuit_parameters, targets=target_states, seed=seed, evaluate=True)
         
         if verify:
-            verify_params = circuit_parameters
-            verify_params["hilbert_dimension"] = 40
-            env_verify = Circuit(verify_params, targets=target_states, seed=seed, evaluate=True)
+            env_verify = Circuit(verify_params, targets=target_states_verify, seed=seed, evaluate=True)
 
         model = PPO.load('models/'+model_name+"/rl_model", env=env)
         print(f'Creating new evaluation environment with random seed: {seed}')
@@ -83,10 +91,15 @@ for i in range(1, num_eval_episodes+1):
     steps_resets.append(sr)
     photon_counts.append(pn)
 
+    
+    steps_table(env.steps, circuit_parameters["max_steps"], model_name, f"steps-{i}")
+
     env.render(name="episode "+str(i)+" state", 
                filename="evals/"+model_name+"/plot-"+str(i), is_target=False)
     if verify:
-        env.render(name="episode "+str(i)+" state", 
+        steps_table(env_verify.steps, verify_params["max_steps"], model_name, f"steps-verify-{i}")
+
+        env_verify.render(name="episode "+str(i)+" state", 
                    filename="evals/"+model_name+"/verify-plot-"+str(i), is_target=False)
 
 final_fidelities = np.array(final_fidelities)
