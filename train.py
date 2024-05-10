@@ -100,7 +100,7 @@ if __name__ == '__main__': # needed for multi proc
     if multi_proc:
     
         n_steps = buffer_size // cpus
-        print(f"\nUsing multi-proccessing with {cpus} cpu cores ({cpus} environments)\n")
+        print(f"\nUsing multi-processing with {cpus} cpu cores ({cpus} environments)\n")
         print(f"n_steps passed to PPO object was changed to be different than that given in training-parameters yaml file, now is: {n_steps}\n")
         
         # create env vector for parallel training
