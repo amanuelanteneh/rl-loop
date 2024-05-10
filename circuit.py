@@ -74,7 +74,20 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.prog = sf.Program(2) # create 2 mode circuit
 
             # perform unitary evolution
-            transmittivity, r, d_pnr, d_pnr_phi, d_inline, d_inline_phi = self.apply_unitary(action)
+            #transmittivity, r, d_pnr, d_pnr_phi, d_inline, d_inline_phi = self.apply_unitary(action)
+            transmittivity = r = 0.0
+            d_inline = d_inline_phi = d_pnr = d_pnr_phi = 0.0
+            transmittivity = (action[0] + 1.0)/2.0 
+            theta = arccos(transmittivity)
+            r = self.max_sqz * action[1]
+            d_pnr = self.max_disp * action[2]
+            d_pnr_phi = pi/2
+
+            with self.prog.context as q:
+                Squeezed(r, 0) | q[1] 
+                DensityMatrix(self.dm) | q[0]
+                BSgate(theta, 0) | (q[0], q[1])
+                Dgate(d_pnr, d_pnr_phi) | q[0]
 
             result = self.eng.run(self.prog) 
             
@@ -103,7 +116,9 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             
             self.t += 1 # increment time step 
             self.dm = result.state.reduced_dm([1]) # partial trace over mode 1   
-            reward, F = self.get_reward()
+            #reward, F = self.get_reward()
+            F = max( [real(dot(target, self.dm).trace()) for target in self.target_states] )
+            reward = (self.trace**(self.exp/10.0)) * (F**self.exp)
             done = self.t == self.T 
 
             info = {"Timestep": self.t,
@@ -204,7 +219,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             if self.reward_method == "fidelity":
                 # since we know at least one of the states will be pure (the target state) 
                 # we can use this much simpler formula for density matrix fidelity
-                F = max( [real(dot(np.array(target), self.dm).trace()) for target in self.target_states] )
+                F = max( [real(dot(target, self.dm).trace()) for target in self.target_states] )
                 reward = (self.trace**(self.exp/10.0)) * (F**self.exp)       
             
             else:
