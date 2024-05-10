@@ -50,6 +50,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.num_target_states = len(self.target_states)
             self.trace = 1.0
             self.prog = None
+            self.prog = sf.Program(2)
             self.eng = sf.Engine("fock", backend_options={"cutoff_dim": self.dim})
 
             # get initial state
@@ -69,6 +70,8 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
         
         def step(self, action: List[float], 
                  postselect: int = None) -> Tuple[np.ndarray, float, bool, Dict[str, Union[float, int]]]:
+
+            self.prog = sf.Program(2) # create 2 mode circuit
 
             # perform unitary evolution
             transmittivity, r, d_pnr, d_pnr_phi, d_inline, d_inline_phi = self.apply_unitary(action)
@@ -134,8 +137,6 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
         def apply_unitary(self, action: List[float]) -> Tuple[float, float, float, float, float, float]:
             transmittivity = r = 0.0
             d_inline = d_inline_phi = d_pnr = d_pnr_phi = 0.0
-            
-            self.prog = sf.Program(2) # create 2 mode circuit
             
             if self.circuit_type == "s|bs":
                 transmittivity = (action[0] + 1.0)/2.0 # rescale range from [-1,1] -> [0, 1] 
@@ -236,11 +237,13 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             # resets the environment
             self.t = 0
             self.steps = []
+            self.eng = sf.Engine("fock", backend_options={"cutoff_dim": self.dim})
+            self.prog = sf.Program(2)
             self.dm = self.initial
             self.success_prob = 1.0
             state = self.dm[triu_indices(self.dim, k=1)]
             diag = diagonal(self.dm)
-            state = np.concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
-            state = np.concatenate((state, real(diag)), dtype=np.float32, axis=None)
+            state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
+            state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
 
             return(state)
