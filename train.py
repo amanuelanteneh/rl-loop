@@ -69,7 +69,8 @@ if __name__ == '__main__': # needed for multi proc
                 +'_maxsqz_'+str(circuit_parameters["max_sqz"])\
                 +'_dmax_'+str(circuit_parameters["max_disp"])\
                 +'_tar_'+target+'_type_'+circuit_parameters["circuit_type"]\
-                +'_loss_'+str(circuit_parameters["loss"])
+                +'_loss_'+str(circuit_parameters["loss"])\
+                +'_lstm_'+str(use_lstm)+'_actfunc_'+activation
 
     os.makedirs('models/', exist_ok=True) # create folder for models if not already there
 
