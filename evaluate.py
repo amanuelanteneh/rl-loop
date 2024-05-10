@@ -13,11 +13,11 @@ verify = sys.argv[3] == 't'
 
 print("Model name:", model_name, flush=True)
 
-with open("models/"+ model_name +"/training-parameters.yml", 'r') as file:
+with open("models/"+ model_name +"/parameters.yml", 'r') as file:
          training_parameters = yaml.safe_load(file)
 
 if verify:
-    with open("models/"+ model_name +"/training-parameters.yml", 'r') as file:
+    with open("models/"+ model_name +"/parameters.yml", 'r') as file:
             verify_params = yaml.safe_load(file)
             verify_params = verify_params['circuit']
 

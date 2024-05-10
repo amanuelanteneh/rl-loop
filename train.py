@@ -32,7 +32,7 @@ def make_env(env_parameters: Dict[str, str], targets: np.ndarray ,rank: int, see
 
 if __name__ == '__main__': # needed for multi proc
     
-    with open('training-parameters.yml', 'r') as file:
+    with open('parameters.yml', 'r') as file:
          training_parameters = yaml.safe_load(file)
     
     model_parameters: Dict[str, Any] = training_parameters['model']
@@ -75,7 +75,7 @@ if __name__ == '__main__': # needed for multi proc
 
     os.makedirs('models/' + model_name, exist_ok=True) # create folder for agent with these parameters
     
-    shutil.copyfile('training-parameters.yml', 'models/' + model_name + '/training-parameters.yml')
+    shutil.copyfile('parameters.yml', 'models/' + model_name + '/parameters.yml')
 
     log_dir = "logs/"
 
