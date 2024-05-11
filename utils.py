@@ -191,6 +191,8 @@ def steps_table(steps: List[ Dict[str, Union[float, int]] ],
     table.scale(4.0, 1.5)
     fig.tight_layout()
     plt.savefig("evals/"+model_name+"/"+filename+".png", dpi=200)
+    plt.clf()
+    plt.close()
 
     return
 
@@ -225,6 +227,8 @@ def histogram(num_bins, final_fidelities, steps_resets, steps_no_resets, photon_
     
     fig.tight_layout()
     plt.savefig('evals/'+model_name+"/eval-"+filename+".png", dpi=180)
+    plt.clf()
+    plt.close()
 
     return
 
