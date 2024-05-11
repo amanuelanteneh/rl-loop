@@ -6,12 +6,15 @@ from qutip import wigner, squeeze, displace, momentum, position, fock, Qobj, coh
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import TensorBoardOutputFormat
 
+import cv2
+
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
 import math
 
 from typing import List, Union, Tuple, Dict
+
 import os
 
 
@@ -127,9 +130,6 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
         dm = outer(ket, ket.conj().T)
         states.append(dm)
 
-
-
-
     elif state_type == "cat":
         a = float(state_params[0])
 
@@ -162,6 +162,25 @@ def episode_stats(ep):
            break
 
     return steps_with_resets, steps_without_resets, pnrs
+
+
+def animate(img_folder, video_name):
+        image_folder = img_folder
+        video_name = video_name+'.avi'
+
+        images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
+        images = sorted(images, key = lambda x: int(x.split('-')[0])) # sort images by step number
+        frame = cv2.imread(os.path.join(image_folder, images[0]))
+        height, width, layers = frame.shape
+        # save at 0.08 frames per second
+        video = cv2.VideoWriter(image_folder+video_name, 0, 0.08, (width,height))
+
+        for image in images:
+            video.write(cv2.imread(os.path.join(image_folder, image)))
+
+        cv2.destroyAllWindows()
+        video.release()
+
 
 def steps_table(steps: List[ Dict[str, Union[float, int]] ], 
               max_steps: int, model_name: str, filename: str) -> None:

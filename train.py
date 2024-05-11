@@ -121,8 +121,12 @@ if __name__ == '__main__': # needed for multi proc
         exit()
 
     # create RL model
-    if activation == 'relu':
+    if activation == "relu":
        act = torch.nn.ReLU
+    elif activation == "gelu":
+        act = torch.nn.GELU
+    elif activation == "silu":
+        act = torch.nn.SiLU
     else:
        act = torch.nn.Tanh
 
@@ -153,7 +157,7 @@ if __name__ == '__main__': # needed for multi proc
                          optimizer_class = optim.Adam)
 
          model = RecurrentPPO("MlpLstmPolicy",
-                    env,
+                    env, 
                     gamma=gamma,
                     n_epochs=num_epochs,
                     batch_size=batch_size,
