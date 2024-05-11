@@ -146,8 +146,8 @@ if __name__ == '__main__': # needed for multi proc
 
     else: # if we want the first layer of the actor and critic networks to be LSTM layers
          policy_kwargs = dict(activation_fn = act,
-                         net_arch=dict(pi=hidden_layers, 
-                                       vf=hidden_layers), 
+                         net_arch=dict(pi=hidden_layers[1:], 
+                                       vf=hidden_layers[1:]), 
                          lstm_hidden_size = hidden_layers[0], 
                          n_lstm_layers = 1,
                          optimizer_class = optim.Adam)
