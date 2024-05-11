@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import pi, sqrt, cosh, exp, tanh, outer, arange, meshgrid, real, diag
 
-from qutip import wigner, squeeze, displace, momentum, position, fock, Qobj, coherent
+from qutip import wigner, squeeze, displace, momentum, position, fock, Qobj, coherent, destroy
 
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import TensorBoardOutputFormat
@@ -111,6 +111,24 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
             ket = np.array(psi).flatten()[:real_dim] / np.linalg.norm( np.array(psi).flatten()[:real_dim] )
             dm = outer(ket, ket.conj().T)
             states.append(dm)
+
+    elif state_type == "super":
+        first = int(state_params[0])
+        second = int(state_params[1])
+        psi = ( fock(dim, first) + fock(dim, second) ).unit()
+        ket = np.array(psi).flatten()[:real_dim] / np.linalg.norm( np.array(psi).flatten()[:real_dim] )
+        dm = outer(ket, ket.conj().T)
+        states.append(dm)
+        
+        a = destroy(dim)
+        R = (1j*(pi/2)*a.dag()*a).expm()
+        psi = R * psi
+        ket = np.array(psi).flatten()[:real_dim] / np.linalg.norm( np.array(psi).flatten()[:real_dim] )
+        dm = outer(ket, ket.conj().T)
+        states.append(dm)
+
+
+
 
     elif state_type == "cat":
         a = float(state_params[0])
