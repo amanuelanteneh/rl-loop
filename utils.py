@@ -199,7 +199,7 @@ def steps_table(steps: List[ Dict[str, Union[float, int]] ],
         cell_data.append(  [ round(steps[i]['F'], 3), round(steps[i]['t'], 3), round(steps[i]['r'], 3), 
                             round(steps[i]['d-inline'], 3), round(steps[i]['d-inline-phi'], 3),
                             round(steps[i]['d-pnr'], 3), round(steps[i]['d-pnr-phi'], 3),  
-                            round(steps[i]['Tr'], 3), steps[i]['n'],  round(steps[i]['P'], 3)
+                            round(steps[i]['Tr'], 3), steps[i]['n'],  str(round(100*steps[i]['P'], 1)) + '%'
                             ]  )
 
     table = plt.table(cellText=cell_data,
