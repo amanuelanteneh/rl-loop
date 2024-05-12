@@ -167,6 +167,8 @@ if __name__ == '__main__': # needed for multi proc
                     policy_kwargs=policy_kwargs,
                     tensorboard_log=log_dir) 
 
+    print(f"\nTarget state: {target}")
+
     print("\nNeural network architecture: \n\n", model.policy, flush=True)
 
     print("\nStarting training.", flush=True)
