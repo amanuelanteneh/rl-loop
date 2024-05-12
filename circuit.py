@@ -131,7 +131,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             transmittivity = r = 0.0
             d_inline = d_inline_phi = d_pnr = d_pnr_phi = 0.0
             
-            if self.circuit_type == "s|bs":
+            if self.circuit_type == "s~bs":
                 transmittivity = (action[0] + 1.0)/2.0 # rescale range from [-1,1] -> [0, 1] 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -141,7 +141,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     DensityMatrix(self.dm) | q[0] # set mode 1 to be output state from prev. step
                     BSgate(theta, 0) | (q[0], q[1])
             
-            elif self.circuit_type == "s|d|bs":
+            elif self.circuit_type == "s~d~bs":
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -154,7 +154,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     Dgate(d_inline, d_inline_phi) | q[0]
                     BSgate(theta, 0) | (q[0], q[1])
             
-            elif self.circuit_type == "s|bs|d":
+            elif self.circuit_type == "s~bs~d":
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -167,7 +167,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     BSgate(theta, 0) | (q[0], q[1])
                     Dgate(d_pnr, d_pnr_phi) | q[0]
             
-            elif self.circuit_type == "s|bs|d-angle":
+            elif self.circuit_type == "s~bs~d-angle":
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
@@ -180,7 +180,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     BSgate(theta, 0) | (q[0], q[1])
                     Dgate(d_pnr, d_pnr_phi) | q[0]
 
-            elif self.circuit_type == "s|d|bs|d":
+            elif self.circuit_type == "s~d~bs~d":
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
