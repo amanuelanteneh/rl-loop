@@ -227,16 +227,16 @@ def histogram(num_bins, final_fidelities, steps_resets, steps_no_resets, photon_
     ax.set_xlabel(f'Output state fidelity' + '\n' + f"for {num_eval_episodes} episodes")
     
     ax = fig.add_subplot(2, 2, 2)
-    bins = np.linspace(0, 350, 350+1, dtype=int)
-    ax.axis(xmin=-2, xmax=250)
-    ax.hist(photon_counts, bins=bins, alpha=0.8)
-    ax.set_xlabel('Total photons detected per episode \n (50 detections per episode)')
-    
-    ax = fig.add_subplot(2, 2, 3)
     bins = np.linspace(0, max_steps, max_steps+1, dtype=int)
     ax.axis(xmin=-2, xmax=max_steps+1)
     ax.hist(steps_resets, bins=bins, alpha=0.8)
     ax.set_xlabel(f'Total steps per episode with resets')
+    
+    ax = fig.add_subplot(2, 2, 3)
+    bins = np.linspace(0, 350, 350+1, dtype=int)
+    ax.axis(xmin=-2, xmax=250)
+    ax.hist(photon_counts, bins=bins, alpha=0.8)
+    ax.set_xlabel('Total photons detected per episode \n (50 detections per episode)')
     
     ax = fig.add_subplot(2, 2, 4)
     bins = np.linspace(0, max_steps, max_steps+1, dtype=int)
