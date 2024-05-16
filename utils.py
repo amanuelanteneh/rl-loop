@@ -84,10 +84,11 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
         r = float(state_params[1])
         a = float(state_params[2])
 
-        params = ( [p, r, a],
-                   [-p, r, -a],
-                   [x, -r, -1j*a],
+        params = ( [x, -r, -1j*a],
                    [-x, -r, 1j*a] )
+                   # [p, r, a] 
+                   # [-p, r, -a]
+                                
         
         for param in params:
             V = (1j*cubicity*(param[0]**3)).expm() # cubic phase gate
