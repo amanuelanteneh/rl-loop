@@ -146,13 +146,15 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
                 d_inline = self.max_disp * action[2]
-                d_inline_phi = pi/2
+                d_pnr = self.max_disp
+                d_inline_phi = d_pnr_phi = pi/2
 
                 with self.prog.context as q:
                     Squeezed(r, 0) | q[1] 
                     DensityMatrix(self.dm) | q[0]
                     Dgate(d_inline, d_inline_phi) | q[0]
                     BSgate(theta, 0) | (q[0], q[1])
+                    Dgate(d_pnr, d_pnr_phi) | q[0]
             
             elif self.circuit_type == "s~bs~d":
                 transmittivity = (action[0] + 1.0)/2.0 
