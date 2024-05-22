@@ -12,7 +12,7 @@ from typing import Tuple, List, Dict, Union, Any
 from utils import plot_state, squeezed_vacuum
 
 
-circuit_types = { "s~bs": 2, # squeezed state input with no angle control and beamsplitter with only \tau tunable 
+CIRCUIT_TYPES = { "s~bs": 2, # squeezed state input with no angle control and beamsplitter with only \tau tunable 
                   "s~d~bs": 3, # same as above except with in-loop/in-line displacement with fixed angle of pi/2
                   "s~bs~d": 3, # same as first but with displacement prior to PNR detector with fixed angle of pi/2
                   "s~bs~d-angle": 4, # same as above but displacement angle is now tunable
@@ -44,7 +44,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.t = 0 # the current time step
             self.T = env_params["max_steps"] # max number of iterations/time steps
             self.circuit_type = env_params["circuit_type"]
-            self.num_actions = circuit_types[self.circuit_type]
+            self.num_actions = CIRCUIT_TYPES[self.circuit_type]
             self.steps: List[Dict[str, Union[float, int]]] = []
             self.target_states = targets
             self.num_target_states = len(self.target_states)
