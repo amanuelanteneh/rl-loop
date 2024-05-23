@@ -8,6 +8,7 @@ circuit:
   penalty_exponent: 50.0
   reward_func: "fidelity"
   circuit_type: "s~bs"
+  state_type: "pnr"
 model:
   total_timesteps: 15_000_000
   gamma: 0.999

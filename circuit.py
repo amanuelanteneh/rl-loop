@@ -16,7 +16,7 @@ CIRCUIT_TYPES = { "s~bs": 2, # squeezed state input with no angle control and be
                   "s~d~bs": 3, # same as above except with in-loop/in-line displacement with fixed angle of pi/2
                   "s~bs~d": 3, # same as first but with displacement prior to PNR detector with fixed angle of pi/2
                   "s~bs~d-angle": 4, # same as above but displacement angle is now tunable
-                  "s~d~bs~d": 4 # same as first but with fixed angle (pi/2) angle inline AND PNR displacement
+                  "s~d~bs~d": 4 # same as first but with inline AND PNR displacement both with fixed angle (pi/2)
                 }
 
 
@@ -45,6 +45,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.T = env_params["max_steps"] # max number of iterations/time steps
             self.circuit_type = env_params["circuit_type"]
             self.num_actions = CIRCUIT_TYPES[self.circuit_type]
+            self.state_type = env_params["state_type"]
             self.steps: List[Dict[str, Union[float, int]]] = []
             self.target_states = targets
             self.num_target_states = len(self.target_states)
@@ -58,8 +59,12 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.dm: np.ndarray = self.initial
             
             # state space
-            self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=( self.dim**2, ), dtype=np.float32) 
-            
+            if self.state_type == "dm":
+                self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=( self.dim**2, ), dtype=np.float32) 
+            elif self.state_type == "pnr":
+                self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=( 1, ), dtype=np.float32) 
+            else:
+                raise NotImplementedError("State type not implemented!")
             
             minAction = [-1.0] * self.num_actions
             maxAction = [1.0] * self.num_actions
@@ -120,10 +125,16 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                      }
 
             self.steps.append(info)
-            state = self.dm[triu_indices(self.dim, k=1)] # get values above diagonal since dm is hermitian
-            diag = diagonal(self.dm) # also get diagonal
-            state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
-            state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
+            
+            if self.state_type == "dm":
+               state = self.dm[triu_indices(self.dim, k=1)] # get values above diagonal since dm is hermitian
+               diag = diagonal(self.dm) # also get diagonal
+               state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
+               state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
+            elif self.state_type == "pnr":
+                state = np.array( [n / self.dim] )
+            else:
+                raise NotImplementedError("State type not implemented!")
             
             return(state, reward, done, info)
 
@@ -236,9 +247,15 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.prog = sf.Program(2)
             self.dm = self.initial
             self.success_prob = 1.0
-            state = self.dm[triu_indices(self.dim, k=1)]
-            diag = diagonal(self.dm)
-            state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
-            state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
+
+            if self.state_type == "dm":
+                state = self.dm[triu_indices(self.dim, k=1)]
+                diag = diagonal(self.dm)
+                state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
+                state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
+            elif self.state_type == "pnr":
+                state = np.array( [-1.0] )
+            else:
+                raise NotImplementedError("State type not implemented!")
 
             return(state)
