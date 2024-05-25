@@ -62,7 +62,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             if self.state_type == "dm":
                 self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=( self.dim**2, ), dtype=np.float32) 
             elif self.state_type == "pnr":
-                self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=( 1, ), dtype=np.float32) 
+                self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=( 1 + self.num_actions, ), dtype=np.float32) 
             else:
                 raise NotImplementedError("State type not implemented!")
             
@@ -132,7 +132,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
                state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
             elif self.state_type == "pnr":
-                state = np.array( [n / self.dim] )
+                state = np.array( [n / self.dim]  + action ) # concat arrays
             else:
                 raise NotImplementedError("State type not implemented!")
             
@@ -254,7 +254,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
                 state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
             elif self.state_type == "pnr":
-                state = np.array( [-1.0] )
+                state = np.array( [0.0] * (1+self.num_actions) )
             else:
                 raise NotImplementedError("State type not implemented!")
 
