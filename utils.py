@@ -82,19 +82,37 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
         p = momentum(dim)
         cubicity = float(state_params[0])
         r = float(state_params[1])
-        a = float(state_params[2])
+        d = float(state_params[2])
 
-        params = ( [x, -r, -1j*a],
-                   [-x, -r, 1j*a] )
-                   # [p, r, a] 
-                   # [-p, r, -a]
+        params = ( [x, -r, -1j*d],
+                   [-x, -r, 1j*d] )
+                   # [p, r, a], 
+                   # [-p, r, -a] )
                                 
-        
         for param in params:
             V = (1j*cubicity*(param[0]**3)).expm() # cubic phase gate
             S = squeeze(dim, param[1]) # squeeze gate
             D = displace(dim, param[2])
             psi = D*V*S*fock(dim, 0)
+            ket = np.array(psi).flatten()[:real_dim] / np.linalg.norm( np.array(psi).flatten()[:real_dim] )
+            dm = outer(ket, ket.conj().T)
+            states.append(dm)
+
+    elif state_type == "quartic":
+        x = position(dim)
+        p = momentum(dim)
+        quarticity = float(state_params[0])
+        r1 = float(state_params[1])
+        r2 = float(state_params[2])
+
+        params = ( [x, -r1, -r2], 
+                   [p, r1, -r2] )
+                                
+        for param in params:
+            V = (1j*quarticity*(param[0]**4)).expm() # quartic phase gate
+            S1 = squeeze(dim, param[1]) # first squeeze gate
+            S2 = squeeze(dim, param[1]) # second squeeze gate
+            psi = S2*V*S1*fock(dim, 0)
             ket = np.array(psi).flatten()[:real_dim] / np.linalg.norm( np.array(psi).flatten()[:real_dim] )
             dm = outer(ket, ket.conj().T)
             states.append(dm)

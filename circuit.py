@@ -1,6 +1,8 @@
 import numpy as np
 from numpy import pi, diagonal, triu_indices, arccos, concatenate, arange, real, imag, dot
 
+from scipy.linalg import sinm, cosm
+
 import strawberryfields as sf
 from strawberryfields.ops import Squeezed, Dgate, BSgate, MeasureFock, DensityMatrix, LossChannel
 
