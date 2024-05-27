@@ -62,6 +62,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 x = np.array( position(self.dim) )
                 p = np.array( momentum(self.dim) )
                 
+                # create GKP squeezing operators
                 # Q0 and Q1 defined in: PhysRevLett.132.210601
                 sin_mat1 = sinm(x * (sqrt(pi) / 2 )) 
                 sin_mat2 = sinm(p * sqrt(pi) )
