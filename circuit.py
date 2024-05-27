@@ -222,6 +222,9 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 F = max( [real(dot(np.array(target), self.dm).trace()) for target in self.target_states] )
                 reward = (self.trace**(self.exp/10.0)) * (F**self.exp)       
             
+            elif self.reward_method == "gkp":
+                raise NotImplementedError("GKP reward method not implemented!")
+
             else:
                 raise NotImplementedError("Reward method not implemented!")
 
