@@ -1,15 +1,17 @@
 import numpy as np
-from numpy import pi, diagonal, triu_indices, arccos, concatenate, arange, real, imag, dot
+from numpy import pi, diagonal, triu_indices, arccos, concatenate, arange, real, imag, sqrt, trace
 
 from scipy.linalg import sinm, cosm
 
 import strawberryfields as sf
 from strawberryfields.ops import Squeezed, Dgate, BSgate, MeasureFock, DensityMatrix, LossChannel
 
+from qutip import momentum, position
+
 from gym import Env
 from gym import spaces
 
-from typing import Tuple, List, Dict, Union, Any
+from typing import Tuple, List, Dict, Union
 
 from utils import plot_state, squeezed_vacuum
 
@@ -55,6 +57,19 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.prog = None
             self.prog = sf.Program(2)
             self.eng = sf.Engine("fock", backend_options={"cutoff_dim": self.dim})
+
+            if self.reward_method == "gkp":
+                x = np.array( position(self.dim) )
+                p = np.array( momentum(self.dim) )
+                
+                # Q0 and Q1 defined in: PhysRevLett.132.210601
+                sin_mat1 = sinm(x * (sqrt(pi) / 2 )) 
+                sin_mat2 = sinm(p * sqrt(pi) )
+                self.Q0 = 2 * ( sin_mat1 @ sin_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
+
+                cos_mat1 = cosm(x * (sqrt(pi) / 2 )) 
+                sin_mat2 = sinm(p * sqrt(pi) )
+                self.Q1 = 2 * ( cos_mat1 @ cos_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
 
             # get initial state
             self.initial = squeezed_vacuum(self.sqz_mag, self.sqz_angle, self.dim)
@@ -219,11 +234,14 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             if self.reward_method == "fidelity":
                 # since we know at least one of the states will be pure (the target state) 
                 # we can use this much simpler formula for density matrix fidelity
-                F = max( [real(dot(np.array(target), self.dm).trace()) for target in self.target_states] )
+                F = max( [real( trace( np.array(target) @ self.dm) ) for target in self.target_states] )
                 reward = (self.trace**(self.exp/10.0)) * (F**self.exp)       
             
             elif self.reward_method == "gkp":
-                raise NotImplementedError("GKP reward method not implemented!")
+                xis = [ real( trace(self.dm @ self.Q0) ), real( trace(self.dm @ self.Q1) ) ]
+                min_xi = min(xis)
+                reward = ( (5 - min_xi) / 5 )**self.exp
+                F = -1
 
             else:
                 raise NotImplementedError("Reward method not implemented!")
