@@ -150,7 +150,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                state = concatenate((real(state), imag(state)), dtype=np.float32, axis=None)
                state = concatenate((state, real(diag)), dtype=np.float32, axis=None)
             elif self.state_type == "pnr":
-                state = np.array( [n / self.dim]  + action ) # concat arrays
+                state = np.array( [n / self.dim]  + list(action) ) # concat arrays
             else:
                 raise NotImplementedError("State type not implemented!")
             
