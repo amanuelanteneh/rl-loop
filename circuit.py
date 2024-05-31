@@ -241,8 +241,9 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             elif self.reward_method == "gkp":
                 xis = [ real( trace(self.dm @ self.Q0) ), real( trace(self.dm @ self.Q1) ) ]
                 min_xi = min(xis)
-                reward = ( (5 - min_xi) / 5 )**self.exp
-                F = reward
+                F = (5 - min_xi) / 5
+                reward = F**self.exp
+                
 
             else:
                 raise NotImplementedError("Reward method not implemented!")
