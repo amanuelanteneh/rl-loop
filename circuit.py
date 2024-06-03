@@ -232,9 +232,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             
             elif self.circuit_type == "cz~d-angle":
                 d_pnr = self.max_disp
-                d_inline = 0
                 d_pnr_phi = pi*(action[0] + 1)
-                d_inline_phi = pi/2
 
                 with self.prog.context as q:
                     DensityMatrix(self.initial) | q[1] 
