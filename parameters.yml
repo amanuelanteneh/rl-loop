@@ -1,8 +1,8 @@
 circuit:
   hilbert_dimension: 30
   max_steps: 50
-  initial_sqz: 1.38
-  max_sqz: 1.38
+  initial_sqz: -1.15
+  max_sqz: 1.15
   max_disp: 0.0
   loss: 0.0
   penalty_exponent: 50.0

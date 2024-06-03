@@ -4,7 +4,7 @@ from numpy import pi, diagonal, triu_indices, arccos, concatenate, arange, real,
 from scipy.linalg import sinm, cosm
 
 import strawberryfields as sf
-from strawberryfields.ops import Squeezed, Dgate, BSgate, MeasureFock, DensityMatrix, LossChannel
+from strawberryfields.ops import Squeezed, Dgate, BSgate, MeasureFock, DensityMatrix, LossChannel, CZgate
 
 from qutip import momentum, position
 
@@ -20,7 +20,8 @@ CIRCUIT_TYPES = { "s~bs": 2, # squeezed state input with no angle control and be
                   "s~d~bs": 3, # same as above except with in-loop/in-line displacement with fixed angle of pi/2
                   "s~bs~d": 3, # same as first but with displacement prior to PNR detector with fixed angle of pi/2
                   "s~bs~d-angle": 4, # same as above but displacement angle is now tunable
-                  "s~d~bs~d": 4 # same as first but with inline AND PNR displacement both with fixed angle (pi/2)
+                  "s~d~bs~d": 4, # same as first but with inline AND PNR displacement both with fixed angle (pi/2)
+                  "cz~d-angle": 1 # star cluster state, cz-gate between input and a p-squeezed state with tunable pnr angle only
                 }
 
 
@@ -57,6 +58,9 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.prog = None
             self.prog = sf.Program(2)
             self.eng = sf.Engine("fock", backend_options={"cutoff_dim": self.dim})
+            
+            if "cz" in self.circuit_type.split("~"):
+                self.cz = CZgate(1)
 
             if self.reward_method == "gkp":
                 x = np.array( position(self.dim) )
@@ -224,6 +228,18 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     DensityMatrix(self.dm) | q[0]
                     Dgate(d_inline, d_inline_phi) | q[0]
                     BSgate(theta, 0) | (q[0], q[1])
+                    Dgate(d_pnr, d_pnr_phi) | q[0]
+            
+            elif self.circuit_type == "cz~d-angle":
+                d_pnr = self.max_disp
+                d_inline = 0
+                d_pnr_phi = pi*(action[0] + 1)
+                d_inline_phi = pi/2
+
+                with self.prog.context as q:
+                    DensityMatrix(self.initial) | q[1] 
+                    DensityMatrix(self.dm) | q[0]
+                    self.cz | (q[0], q[1])
                     Dgate(d_pnr, d_pnr_phi) | q[0]
             
             else:
