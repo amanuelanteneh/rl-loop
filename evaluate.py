@@ -6,6 +6,7 @@ from circuit import Circuit
 from stable_baselines3 import PPO
 from typing import Dict, Any, List
 from utils import episode_stats, get_states, histogram, steps_table
+import shutil
 
 num_eval_episodes = int(sys.argv[1])
 model_name = sys.argv[2]
@@ -26,6 +27,10 @@ model_parameters: Dict[str, Any] = training_parameters['model']
 deterministic = True
 
 os.makedirs('evals/'+model_name, exist_ok=True)
+
+# add parameters yaml file to evals folder
+shutil.copyfile('models/' + model_name + '/parameters.yml', 'evals/' + model_name + '/parameters.yml') 
+
 
 final_fidelities = []
 photon_counts = []
