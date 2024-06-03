@@ -6,8 +6,6 @@ from qutip import wigner, squeeze, displace, momentum, position, fock, Qobj, coh
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import TensorBoardOutputFormat
 
-import cv2
-
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
@@ -99,6 +97,7 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
             states.append(dm)
 
     elif state_type == "quartic":
+        # quartic~0.1~0.4~0.5
         x = position(dim)
         p = momentum(dim)
         quarticity = float(state_params[0])

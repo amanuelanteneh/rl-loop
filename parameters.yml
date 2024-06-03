@@ -1,5 +1,5 @@
 circuit:
-  hilbert_dimension: 30
+  hilbert_dimension: 31
   max_steps: 50
   initial_sqz: -1.15
   max_sqz: 1.15
@@ -7,8 +7,8 @@ circuit:
   loss: 0.0
   penalty_exponent: 50.0
   reward_func: "fidelity"
-  circuit_type: "s~bs"
-  state_type: "pnr"
+  circuit_type: "cz~d-angle"
+  state_type: "dm"
 model:
   total_timesteps: 15_000_000
   gamma: 0.999
