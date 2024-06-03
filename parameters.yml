@@ -17,6 +17,6 @@ model:
   buffer_size: 35_000
   clip_range: 0.20
   learning_rate: 0.001
-  use_lstm: True
-  hidden_layers: [128, 128, 64]
+  use_lstm: False
+  hidden_layers: [256, 128, 64]
   activation_func: "relu"
