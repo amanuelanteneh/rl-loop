@@ -6,3 +6,4 @@ logs/*
 .ipynb_checkpoints
 __pycache__/
 parameters.yml
+.vscode/
