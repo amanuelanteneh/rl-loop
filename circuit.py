@@ -58,7 +58,8 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.prog = None
             self.prog = sf.Program(2)
             self.eng = sf.Engine("fock", backend_options={"cutoff_dim": self.dim})
-            
+            self.cz = None
+
             if "cz" in self.circuit_type.split("~"):
                 self.cz = CZgate(1)
 
@@ -131,7 +132,10 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.t += 1 # increment time step 
             self.dm = result.state.reduced_dm([1]) # partial trace over mode 1   
             reward, F = self.get_reward()
-            done = self.t == self.T 
+            done = self.t == self.T
+            # fidelity threshold since agent can't stop loop on its own
+            if self.cz != None: 
+               done = F >= 0.89
 
             info = {"Timestep": self.t,
                     "Tr": self.trace,
