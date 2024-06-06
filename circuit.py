@@ -67,7 +67,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 x = np.array( position(self.dim) )
                 p = np.array( momentum(self.dim) )
                 
-                # create GKP squeezing operators
+                # create (qubit state) GKP squeezing operators
                 # Q0 and Q1 defined in: PhysRevLett.132.210601
                 sin_mat1 = sinm(x * (sqrt(pi) / 2 )) 
                 sin_mat2 = sinm(p * sqrt(pi) )
@@ -75,6 +75,19 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
 
                 cos_mat1 = cosm(x * (sqrt(pi) / 2 )) 
                 sin_mat2 = sinm(p * sqrt(pi) )
+                self.Q1 = 2 * ( cos_mat1 @ cos_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
+            if self.reward_method == "sqr-gkp":
+                x = np.array( position(self.dim) )
+                p = np.array( momentum(self.dim) )
+                
+                # create (square grid) GKP squeezing operators
+                # Q0 and Q1 defined in: PhysRevLett.132.210601
+                sin_mat1 = sinm(x * sqrt(pi / 2) ) 
+                sin_mat2 = sinm(p * sqrt(pi / 2) ) 
+                self.Q0 = 2 * ( sin_mat1 @ sin_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
+
+                cos_mat1 = cosm(x * sqrt(pi / 2) ) 
+                sin_mat2 = sinm(p * sqrt(pi / 2) )
                 self.Q1 = 2 * ( cos_mat1 @ cos_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
 
             # get initial state
@@ -256,7 +269,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 F = max( [real( trace( np.array(target) @ self.dm) ) for target in self.target_states] )
                 reward = (self.trace**(self.exp/10.0)) * (F**self.exp)       
             
-            elif self.reward_method == "gkp":
+            elif self.reward_method == "gkp" or self.reward_method == "sqr-gkp":
                 xis = [ real( trace(self.dm @ self.Q0) ), real( trace(self.dm @ self.Q1) ) ]
                 min_xi = min(xis)
                 F = (5 - min_xi) / 5
