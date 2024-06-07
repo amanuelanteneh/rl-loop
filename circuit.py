@@ -73,9 +73,9 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 sin_mat2 = sinm(p * sqrt(pi) )
                 self.Q0 = 2 * ( sin_mat1 @ sin_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
 
-                cos_mat1 = cosm(x * (sqrt(pi) / 2 )) 
-                sin_mat2 = sinm(p * sqrt(pi) )
-                self.Q1 = 2 * ( cos_mat1 @ cos_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
+                # cos_mat1 = cosm(x * (sqrt(pi) / 2 )) 
+                # sin_mat2 = sinm(p * sqrt(pi) )
+                # self.Q1 = 2 * ( cos_mat1 @ cos_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
             if self.reward_method == "sqr-gkp":
                 x = np.array( position(self.dim) )
                 p = np.array( momentum(self.dim) )
@@ -86,9 +86,9 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 sin_mat2 = sinm(p * sqrt(pi / 2) ) 
                 self.Q0 = 2 * ( sin_mat1 @ sin_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
 
-                cos_mat1 = cosm(x * sqrt(pi / 2) ) 
-                sin_mat2 = sinm(p * sqrt(pi / 2) )
-                self.Q1 = 2 * ( cos_mat1 @ cos_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
+                # cos_mat1 = cosm(x * sqrt(pi / 2) ) 
+                # sin_mat2 = sinm(p * sqrt(pi / 2) )
+                # self.Q1 = 2 * ( cos_mat1 @ cos_mat1 ) + 2 * ( sin_mat2 @ sin_mat2 )
 
             # get initial state
             self.initial = squeezed_vacuum(self.sqz_mag, self.sqz_angle, self.dim)
@@ -270,9 +270,10 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 reward = (self.trace**(self.exp/10.0)) * (F**self.exp)       
             
             elif self.reward_method == "gkp" or self.reward_method == "sqr-gkp":
-                xis = [ real( trace(self.dm @ self.Q0) ), real( trace(self.dm @ self.Q1) ) ]
-                min_xi = min(xis)
-                F = (5 - min_xi) / 5
+                #xis = [ real( trace(self.dm @ self.Q0) ), real( trace(self.dm @ self.Q1) ) ]
+                #min_xi = min(xis)
+                xi = real( trace(self.dm @ self.Q0) )
+                F = (5 - xi) / 5
                 reward = F**self.exp
                 
 
