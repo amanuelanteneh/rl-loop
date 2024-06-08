@@ -31,6 +31,8 @@ os.makedirs('evals/'+model_name, exist_ok=True)
 # add parameters yaml file to evals folder
 shutil.copyfile('models/' + model_name + '/parameters.yml', 'evals/' + model_name + '/parameters.yml') 
 
+# add model parameters file to evals folder
+shutil.copyfile('models/' + model_name + '/rl_model.zip', 'evals/' + model_name + '/rl_model.zip') 
 
 final_fidelities = []
 photon_counts = []
