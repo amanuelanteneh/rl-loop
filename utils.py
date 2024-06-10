@@ -88,7 +88,7 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
                    # [-p, r, -a] )
                                 
         for param in params:
-            V = (-1j*cubicity*(param[0]**3)).expm() # cubic phase gate
+            V = (-1j * cubicity * param[0]**3).expm() # cubic phase gate
             S = squeeze(dim, param[1]) # squeeze gate
             D = displace(dim, param[2])
             psi = D*V*S*fock(dim, 0)
