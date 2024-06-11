@@ -76,8 +76,8 @@ def get_states(state_type: str, dim: int, state_params: List[Union[int, float]])
     states = []
 
     if state_type == "cubic":
-        x = position(dim)
-        p = momentum(dim)
+        x = position(dim) # x = 1 / sqrt(2) * (a + a.dag())
+        p = momentum(dim) # p = -1j/sqrt(2)*(a-a.dag())
         cubicity = float(state_params[0])
         r = float(state_params[1])
         d = float(state_params[2])
