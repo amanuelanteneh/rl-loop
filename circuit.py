@@ -36,7 +36,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.dim = env_params["hilbert_dimension"] # dimension of hilbert space 
             self.reward_method = env_params["reward_func"]
             self.evaluate  = evaluate
-            self.max_quad = 7.5 # maximum quadrature value for Winger plot
+            self.max_quad = 5.5 # maximum quadrature value for Winger plot
             self.quad_range: np.ndarray = arange(-self.max_quad, self.max_quad, 0.1)
             self.exp = env_params["penalty_exponent"] # penalty exponent
             self.sqz_mag = np.abs(env_params["initial_sqz"])
