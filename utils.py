@@ -252,7 +252,7 @@ def histogram(num_bins, final_fidelities, steps_resets, steps_no_resets, photon_
     
     ax = fig.add_subplot(2, 2, 3)
     bins = np.linspace(0, 350, 350+1, dtype=int)
-    ax.axis(xmin=-2, xmax=250)
+    ax.axis(xmin=-2, xmax=350)
     ax.hist(photon_counts, bins=bins, alpha=0.8)
     ax.set_xlabel('Total photons detected per episode \n (50 detections per episode)')
     
