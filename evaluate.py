@@ -104,10 +104,10 @@ for i in range(1, num_eval_episodes+1):
     env.render(name="episode "+str(i)+" state", 
                filename="evals/"+model_name+"/plot-"+str(i), is_target=False)
     if verify:
-        steps_table(env_verify.steps, verify_params["max_steps"], model_name, f"steps-verify-{i}")
+        steps_table(env_verify.steps, verify_params["max_steps"], model_name, f"steps-{i}-higher-cutoff")
 
         env_verify.render(name="episode "+str(i)+" state", 
-                   filename="evals/"+model_name+"/verify-plot-"+str(i), is_target=False)
+                   filename="evals/"+model_name+"/plot-"+str(i)+"-higher-cutoff", is_target=False)
 
 final_fidelities = np.array(final_fidelities)
 
