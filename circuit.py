@@ -43,6 +43,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             self.sqz_angle = np.angle(env_params["initial_sqz"])
             self.max_sqz  = env_params["max_sqz"]
             self.max_disp = env_params["max_disp"]
+            self.pnr_disp = env_params["pnr_disp"]
             self.success_prob = 1.0
             self.loss = env_params["loss"]
             self.is_lossy = self.loss > 0.0
@@ -196,7 +197,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
                 d_inline = self.max_disp * action[2]
-                d_pnr = self.max_disp
+                d_pnr = self.pnr_disp
                 d_inline_phi = d_pnr_phi = pi/2
 
                 with self.prog.context as q:

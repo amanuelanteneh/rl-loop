@@ -68,6 +68,7 @@ if __name__ == '__main__': # needed for multi proc
                 +'_rew_'+circuit_parameters["reward_func"]\
                 +'_maxsqz_'+str(circuit_parameters["max_sqz"])\
                 +'_dmax_'+str(circuit_parameters["max_disp"])\
+                +'_dpnr_'+str(circuit_parameters["pnr_disp"])\
                 +'_tar_'+target+'_type_'+circuit_parameters["circuit_type"]\
                 +'_state_'+circuit_parameters["state_type"]\
                 +'_loss_'+str(circuit_parameters["loss"])\
