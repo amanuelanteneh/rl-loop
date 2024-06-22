@@ -110,8 +110,8 @@ if __name__ == '__main__': # needed for multi proc
         
         # create env vector for parallel training
         env = SubprocVecEnv([make_env(circuit_parameters, targets=target_states, rank=i, seed=42+i) for i in range(cpus)])
-        
-        checkpoint_callback = CheckpointCallback(save_freq=max(50_000 // cpus, 1), 
+        save_freq = max(model_parameters["save_freq"] // cpus, 1)
+        checkpoint_callback = CheckpointCallback(save_freq=save_freq, 
                                                             save_path="models/"+model_name, 
                                                             name_prefix="rl_model")
         

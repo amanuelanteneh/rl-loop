@@ -1,5 +1,6 @@
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.logger import configure
 from sb3_contrib import RecurrentPPO
 import numpy as np
 import sys
@@ -27,8 +28,7 @@ def make_env(env_parameters: Dict[str, str], targets: np.ndarray ,rank: int, see
 
 if __name__ == '__main__': # needed for multi proc
     cpus = int(sys.argv[1])
-    target = sys.argv[2]
-    model_name = sys.argv[3]
+    model_name = sys.argv[2]
 
     model_path = "models/" + model_name + "/rl_model.zip"
     model_logs = "logs/" + model_name
@@ -42,7 +42,10 @@ if __name__ == '__main__': # needed for multi proc
     for key in circuit_parameters:
         print(key, ":", circuit_parameters[key], flush=True)
     
-    # get target states
+    # get target states, next 3 lines are just done so the target state can be grabbed from the model_name
+    model_list: List[str] = model_name.split("_")
+    model_dict: Dict[str, str] = { model_list[i] : model_list[i+1] for i in range(0, len(model_list), 2) }
+    target = model_dict["tar"]
     state = target.split('~')[0]
     state_params = target.split('~')[1:]
     target_states: List[np.ndarray] = get_states(state, circuit_parameters["hilbert_dimension"], state_params)
@@ -56,8 +59,8 @@ if __name__ == '__main__': # needed for multi proc
         
         # create env vector for parallel training
         env = SubprocVecEnv([make_env(circuit_parameters, targets=target_states, rank=i, seed=42+i) for i in range(cpus)])
-
-        checkpoint_callback = CheckpointCallback(save_freq=max(50_000 // cpus, 1), 
+        save_freq = max(model_parameters["save_freq"] // cpus, 1)
+        checkpoint_callback = CheckpointCallback(save_freq=save_freq, 
                                                             save_path="models/"+model_name, 
                                                             name_prefix="rl_model")
         
@@ -73,6 +76,13 @@ if __name__ == '__main__': # needed for multi proc
         model = PPO.load(model_path, print_system_info=True)
 
     model.set_env(env)
+    log_dir = "logs/"
+    # appending _1 to folder name because that's how sb3 creates the initial logger folder
+    # the logger will now create a new events.out.tfevents file in the log folder for the model
+    # and tensorboard will just concatenate them when displaying the training curves
+
+    new_logger = configure(log_dir + model_name + "_1", ["tensorboard"])
+    model.set_logger(new_logger)
 
     model.learn(total_timesteps, callback=[timestep_callback, eps_callback, checkpoint_callback], reset_num_timesteps=False)
 
