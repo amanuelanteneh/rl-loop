@@ -44,7 +44,9 @@ lstm_states = None # used if agent has LSTM layer
 episode_starts = np.ones((1,), dtype=bool) # used if agent has LSTM layer
 seed = 0
 
-target = model_name.split('_')[11]
+model_list: List[str] = model_name.split("_")
+model_dict: Dict[str, str] = { model_list[i] : model_list[i+1] for i in range(0, len(model_list), 2) }
+target = model_dict["tar"]
 state = target.split('~')[0]
 state_params = target.split('~')[1:]
 target_states: List[np.ndarray] = get_states(state, circuit_parameters["hilbert_dimension"], state_params)
