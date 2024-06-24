@@ -149,7 +149,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             done = self.t == self.T
             # fidelity threshold since agent can't stop loop on its own
             if self.cz != None: 
-               done = F >= 0.89 or self.t == self.T
+               done = F >= 0.95 or self.t == self.T
 
             info = {"Timestep": self.t,
                     "Tr": self.trace,
