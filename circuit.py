@@ -211,7 +211,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
-                d_pnr = self.max_disp * action[2]
+                d_pnr = self.pnr_disp * action[2]
                 d_pnr_phi = pi/2
 
                 with self.prog.context as q:
@@ -224,7 +224,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
-                d_pnr = self.max_disp * action[2]
+                d_pnr = self.pnr_disp * action[2]
                 d_pnr_phi = pi*(action[3] + 1) # [-1,1] -> [0, 2*pi]
 
                 with self.prog.context as q:
