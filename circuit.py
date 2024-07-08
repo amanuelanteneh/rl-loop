@@ -237,7 +237,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                 transmittivity = (action[0] + 1.0)/2.0 
                 theta = arccos(transmittivity)
                 r = self.max_sqz * action[1]
-                d_pnr = self.max_disp * action[2]
+                d_pnr = self.pnr_disp * action[2]
                 d_inline = self.max_disp * action[3]
                 d_pnr_phi = d_inline_phi = pi/2
 
