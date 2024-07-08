@@ -249,7 +249,7 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
                     Dgate(d_pnr, d_pnr_phi) | q[0]
             
             elif self.circuit_type == "cz~d-angle":
-                d_pnr = self.max_disp
+                d_pnr = self.pnr_disp
                 d_pnr_phi = pi*(action[0] + 1)
 
                 with self.prog.context as q:
