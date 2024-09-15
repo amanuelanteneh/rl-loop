@@ -6,7 +6,7 @@ from scipy.linalg import sinm, cosm
 import strawberryfields as sf
 from strawberryfields.ops import Squeezed, Dgate, BSgate, MeasureFock, DensityMatrix, LossChannel, CZgate
 
-from qutip import momentum, position
+from qutip import momentum, position, wigner, Qobj
 
 from gym import Env
 from gym import spaces
@@ -267,8 +267,12 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             if self.reward_method == "fidelity":
                 # since we know at least one of the states will be pure (the target state) 
                 # we can use this much simpler formula for density matrix fidelity
+                min_W = min(wigner(Qobj(self.dm), self.quad_range, self.quad_range).flatten())
                 F = max( [real( trace( np.array(target) @ self.dm) ) for target in self.target_states] )
-                reward = (self.trace**(self.exp/10.0)) * (F**self.exp)       
+                if min_W < -1e-4:
+                   reward = (self.trace**(self.exp/10.0)) * (F**self.exp)       
+                else: # reward for no negativity
+                   reward = 0
             
             elif self.reward_method == "gkp" or self.reward_method == "sqr-gkp":
                 #xis = [ real( trace(self.dm @ self.Q0) ), real( trace(self.dm @ self.Q1) ) ]
