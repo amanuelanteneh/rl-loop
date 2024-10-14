@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=1-00:00:00
+#SBATCH --time=24:00:00
 #SBATCH -A quantum
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
