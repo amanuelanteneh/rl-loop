@@ -21,7 +21,8 @@ CIRCUIT_TYPES = { "s~bs": 2, # squeezed state input with no angle control and be
                   "s~bs~d": 3, # same as first but with displacement prior to PNR detector with fixed angle of pi/2
                   "s~bs~d-angle": 4, # same as above but displacement angle is now tunable
                   "s~d~bs~d": 4, # same as first but with inline AND PNR displacement both with fixed angle (pi/2)
-                  "cz~d-angle": 1 # star cluster state, cz-gate between input and a p-squeezed state with tunable pnr angle only
+                  "cz~d-angle": 1, # star cluster state, cz-gate between input and a p-squeezed state with tunable pnr angle only
+                  "cz~d": 2, # ibid but phase and amplitude are controllable
                 }
 
 
@@ -250,6 +251,16 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             
             elif self.circuit_type == "cz~d-angle":
                 d_pnr = self.pnr_disp
+                d_pnr_phi = pi*(action[0] + 1)
+
+                with self.prog.context as q:
+                    DensityMatrix(self.initial) | q[1] 
+                    DensityMatrix(self.dm) | q[0]
+                    self.cz | (q[0], q[1])
+                    Dgate(d_pnr, d_pnr_phi) | q[0]
+                
+            elif self.circuit_type == "cz~d":
+                d_pnr = action[1]*self.pnr_disp
                 d_pnr_phi = pi*(action[0] + 1)
 
                 with self.prog.context as q:
