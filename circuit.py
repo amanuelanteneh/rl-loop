@@ -23,6 +23,7 @@ CIRCUIT_TYPES = { "s~bs": 2, # squeezed state input with no angle control and be
                   "s~d~bs~d": 4, # same as first but with inline AND PNR displacement both with fixed angle (pi/2)
                   "cz~d-angle": 1, # star cluster state, cz-gate between input and a p-squeezed state with tunable pnr angle only
                   "cz~d": 2, # ibid but phase and amplitude are controllable
+                  "cz~d-eps": 1 # Alternate phi between 0 and phi-epsilon
                 }
 
 
@@ -262,6 +263,16 @@ class Circuit(Env): # the time-multiplexed optical circuit (the environment)
             elif self.circuit_type == "cz~d":
                 d_pnr = action[1]*self.pnr_disp
                 d_pnr_phi = pi*(action[0] + 1)
+
+                with self.prog.context as q:
+                    DensityMatrix(self.initial) | q[1] 
+                    DensityMatrix(self.dm) | q[0]
+                    self.cz | (q[0], q[1])
+                    Dgate(d_pnr, d_pnr_phi) | q[0]
+            
+            elif self.circuit_type == "cz~d-eps":
+                d_pnr = action[0]*self.pnr_disp
+                d_pnr_phi = 0 if self.t % 2 == 0 else pi-0.01
 
                 with self.prog.context as q:
                     DensityMatrix(self.initial) | q[1] 
