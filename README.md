@@ -1,5 +1,3 @@
-# Deep reinforcement learning for quantum state engineering of squeezed cat and cubic phase states 
+# Deep reinforcement learning for quantum state engineering of cubic phase states 
 
-![til](cat.gif)
-
-This is the supporting code for the results presented in the paper I co-authored *Machine learning for efficient generation of universal hybrid quantum computing resources* available [**here**](https://arxiv.org/abs/2310.03130)
+This is the supporting code for the results presented in the paper I co-authored *Deep reinforcement learning for near-deterministic preparation of cubic- and quartic-phase gates in photonic quantum computing* available [**here**](https://arxiv.org/abs/2506.07859).
